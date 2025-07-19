@@ -1,78 +1,309 @@
+"use client"
+import React, { useState } from "react";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 
-export default function Home() {
+const HeroSection = () => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+
+  // Container animation variants
+  const containerVariants = {
+    idle: {
+      scale: 1,
+      rotateX: 0,
+      rotateY: 0,
+      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 30
+      }
+    },
+    hover: {
+      scale: 1.02,
+      boxShadow: "0 35px 80px -12px rgba(0, 0, 0, 0.4)",
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 25
+      }
+    },
+    tap: {
+      scale: 0.98,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 20
+      }
+    }
+  };
+
+  // Text animation variants
+  const textVariants = {
+    hidden: {
+      opacity: 0,
+      x: -40,
+      filter: "blur(8px)",
+      transition: {
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1]
+      }
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      filter: "blur(0px)",
+      transition: {
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1],
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  // Main text animation variants
+  const mainTextVariants = {
+    centered: {
+      opacity: 1,
+      x: 48,
+      scale: 1,
+      filter: "blur(0px)",
+      transition: {
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1]
+      }
+    },
+    shifted: {
+      opacity: 0,
+      x: 30,
+      scale: 0.95,
+      filter: "blur(4px)",
+      transition: {
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1]
+      }
+    }
+  };
+
+  // Image animation variants
+  const imageVariants = {
+    left: {
+      left: "12px",
+      rotate: 0,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 350,
+        damping: 30,
+        mass: 0.8
+      }
+    },
+    right: {
+      left: "calc(100% - 96px)",
+      rotate: 360,
+      scale: 1.1,
+      transition: {
+        type: "spring",
+        stiffness: 350,
+        damping: 30,
+        mass: 0.8
+      }
+    }
+  };
+
+  // Background glow animation
+  const glowVariants = {
+    idle: {
+      opacity: 0,
+      scale: 0.8,
+      transition: { duration: 0.3 }
+    },
+    active: {
+      opacity: 1,
+      scale: 1.2,
+      transition: { duration: 0.3 }
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center flex-1 py-16 px-4 text-center relative">
-        <div className="max-w-3xl w-full">
-          <div className="bg-white/95 rounded-3xl shadow-2xl p-8 md:p-14 mb-10 border border-blue-100 relative overflow-visible">
-            {/* SVG App Window Mockup */}
-            <div className="flex justify-center mb-8">
-              <svg width="420" height="180" viewBox="0 0 420 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-lg">
-                {/* Window background */}
-                <rect x="0" y="0" width="420" height="180" rx="18" fill="#f3f4f6" />
-                {/* Topbar */}
-                <rect x="0" y="0" width="420" height="32" rx="18" fill="#6366f1" />
-                {/* Sidebar */}
-                <rect x="0" y="32" width="60" height="148" rx="12" fill="#e0e7ff" />
-                {/* Sidebar icons */}
-                <circle cx="30" cy="52" r="7" fill="#6366f1" />
-                <circle cx="30" cy="80" r="7" fill="#a5b4fc" />
-                <circle cx="30" cy="108" r="7" fill="#a5b4fc" />
-                <circle cx="30" cy="136" r="7" fill="#a5b4fc" />
-                {/* Chart area */}
-                <rect x="80" y="52" width="300" height="24" rx="6" fill="#c7d2fe" />
-                <rect x="80" y="86" width="220" height="24" rx="6" fill="#6366f1" />
-                <rect x="80" y="120" width="180" height="24" rx="6" fill="#a5b4fc" />
-                {/* Table lines */}
-                <rect x="80" y="154" width="120" height="10" rx="4" fill="#e0e7ff" />
-                <rect x="210" y="154" width="60" height="10" rx="4" fill="#e0e7ff" />
-              </svg>
+    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-200 flex items-center justify-center p-4">
+      {/* Animated background elements */}
+      <motion.div
+        className="absolute inset-0 overflow-hidden pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
+        <motion.div
+          className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-amber-200/30 to-orange-300/30 rounded-full blur-3xl"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -50, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+        <motion.div
+          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-blue-200/20 to-purple-300/20 rounded-full blur-3xl"
+          animate={{
+            x: [0, -80, 0],
+            y: [0, 80, 0],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+      </motion.div>
+
+      <div className="relative">
+        {/* Glow effect */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-orange-500/20 to-red-500/20 rounded-full blur-xl"
+          variants={glowVariants}
+          animate={isHovered ? "active" : "idle"}
+        />
+        
+        {/* Main container */}
+        <motion.div
+          variants={containerVariants}
+          animate={isPressed ? "tap" : isHovered ? "hover" : "idle"}
+          onHoverStart={() => setIsHovered(true)}
+          onHoverEnd={() => setIsHovered(false)}
+          onTapStart={() => setIsPressed(true)}
+          onTap={() => setIsPressed(false)}
+          onTapCancel={() => setIsPressed(false)}
+          className="relative bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 rounded-full mx-auto cursor-pointer overflow-hidden border border-zinc-700/50 backdrop-blur-sm"
+          whileTap={{ scale: 0.97 }}
+        >
+          <div className="w-full max-w-md sm:max-w-xl lg:max-w-2xl relative">
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-full"
+              animate={{
+                x: isHovered ? ["-100%", "200%"] : "-100%"
+              }}
+              transition={{
+                duration: 0.8,
+                ease: "easeInOut"
+              }}
+            />
+
+            <div className="relative px-8 py-4 sm:px-12 sm:py-6 lg:px-16 lg:py-8">
+              {/* Left side text - appears on hover */}
+              <motion.div
+                variants={textVariants}
+                animate={isHovered ? "visible" : "hidden"}
+                className="absolute left-8 sm:left-12 lg:left-16 top-1/2 transform -translate-y-1/2 z-20"
+              >
+                <motion.h2 
+                  className="text-lg sm:text-xl font-bold text-white mb-1"
+                  variants={textVariants}
+                >
+                  Ready?
+                </motion.h2>
+                <motion.p 
+                  className="text-white/70 text-sm"
+                  variants={textVariants}
+                >
+                  Let's order!
+                </motion.p>
+              </motion.div>
+
+              {/* Main centered text */}
+              <motion.div
+                variants={mainTextVariants}
+                animate={isHovered ? "shifted" : "centered"}
+                className="text-center flex-1 relative z-10 pr-16 sm:pr-20 lg:pr-24"
+              >
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1">
+                  Start Your Order
+                </h1>
+                <p className="text-white/70 text-sm sm:text-base">
+                  Fresh food delivered to your door
+                </p>
+              </motion.div>
+
+              {/* Animated food icon */}
+              <motion.div
+                variants={imageVariants}
+                animate={isHovered ? "right" : "left"}
+                className="absolute top-1/2 transform -translate-y-1/2 z-30"
+                whileHover={{ 
+                  scale: 1.2,
+                  rotate: [0, -10, 10, 0],
+                  transition: { duration: 0.3 }
+                }}
+              >
+                <motion.div 
+                  className="bg-gradient-to-br from-white to-zinc-100 rounded-full p-3 shadow-2xl border border-white/20"
+                  whileHover={{
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.3)"
+                  }}
+                >
+                  <motion.div
+                    className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center"
+                    animate={isHovered ? {
+                      background: ["linear-gradient(45deg, #fbbf24, #f97316)", "linear-gradient(45deg, #f97316, #dc2626)", "linear-gradient(45deg, #fbbf24, #f97316)"]
+                    } : {}}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <motion.span 
+                      className="text-2xl"
+                      animate={{ 
+                        rotate: isHovered ? [0, 15, -15, 0] : 0 
+                      }}
+                      transition={{ 
+                        duration: 0.5,
+                        repeat: isHovered ? Infinity : 0,
+                        repeatType: "reverse"
+                      }}
+                    >
+                      🍔
+                    </motion.span>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+
+              {/* Progress indicator */}
+              <motion.div
+                className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ 
+                  opacity: isHovered ? 1 : 0,
+                  scale: isHovered ? 1 : 0.8 
+                }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <div className="flex space-x-1">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-2 h-2 bg-white/40 rounded-full"
+                      animate={{
+                        scale: isHovered ? [1, 1.5, 1] : 1,
+                        opacity: isHovered ? [0.4, 1, 0.4] : 0.4
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        delay: i * 0.2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-3 tracking-tight">Accounts CRM</h1>
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-6">
-              The modern way to manage your quotations, invoices, receipts, and more. Simple, beautiful, and built for your business.
-            </p>
-            <a
-              href="#"
-              className="inline-block px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition text-lg"
-            >
-              Get Started for Free
-            </a>
           </div>
-        </div>
-        {/* Wavy Divider */}
-        <div className="absolute left-0 right-0 -bottom-10 pointer-events-none select-none">
-          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-20">
-            <path d="M0 40 Q 360 80 720 40 T 1440 40 V80 H0V40Z" fill="#fff" />
-          </svg>
-        </div>
-      </section>
-      {/* Features Section */}
-      <section className="relative z-10 max-w-6xl mx-auto px-4 py-16 grid gap-10 md:grid-cols-3">
-        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center border border-blue-50 hover:shadow-2xl hover:-translate-y-2 transition group">
-          {/* SVG Icon */}
-          <svg width="40" height="40" fill="none" viewBox="0 0 24 24" className="mb-4 text-blue-500 group-hover:scale-110 transition"><rect x="3" y="6" width="18" height="12" rx="3" fill="#6366f1"/><rect x="7" y="10" width="10" height="2" rx="1" fill="#fff"/></svg>
-          <h3 className="font-semibold text-lg mb-2 text-gray-800">Quotations & Invoices</h3>
-          <p className="text-gray-500 text-sm">Create, send, and track professional quotations and invoices in seconds.</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center border border-purple-50 hover:shadow-2xl hover:-translate-y-2 transition group">
-          {/* SVG Icon */}
-          <svg width="40" height="40" fill="none" viewBox="0 0 24 24" className="mb-4 text-purple-500 group-hover:scale-110 transition"><circle cx="12" cy="12" r="10" fill="#a78bfa"/><path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-          <h3 className="font-semibold text-lg mb-2 text-gray-800">Receipts & Payments</h3>
-          <p className="text-gray-500 text-sm">Record receipts, manage payouts, and keep your cash flow organized.</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center border border-blue-50 hover:shadow-2xl hover:-translate-y-2 transition group">
-          {/* SVG Icon */}
-          <svg width="40" height="40" fill="none" viewBox="0 0 24 24" className="mb-4 text-blue-400 group-hover:scale-110 transition"><rect x="4" y="4" width="16" height="16" rx="4" fill="#60a5fa"/><path d="M8 16v-4h8v4" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-          <h3 className="font-semibold text-lg mb-2 text-gray-800">Sales & Purchases</h3>
-          <p className="text-gray-500 text-sm">Monitor sales orders, purchases, and get real-time financial insights.</p>
-        </div>
-      </section>
-      {/* Footer */}
-      <footer className="text-center text-gray-400 text-sm py-6">
-        &copy; {new Date().getFullYear()} Accounts CRM. Made with <span className="text-pink-400">♥</span> for businesses.
-      </footer>
+        </motion.div>
+      </div>
     </div>
   );
-}
+};
+
+export default HeroSection;

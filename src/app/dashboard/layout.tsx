@@ -8,7 +8,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   // Sidebar width: 80px when collapsed, 220px when expanded
   // Use Tailwind margin classes for main content
-  const marginClass = collapsed ? "md:ml-20" : "md:ml-56";
+  const marginClass = collapsed ? "md:ml-16" : "md:ml-56";
 
   return (
     <div className="bg-gray-50">

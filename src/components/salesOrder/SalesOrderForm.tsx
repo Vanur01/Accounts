@@ -8,15 +8,14 @@ import AddClientModal from "@/components/AddClientModal";
 import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";
 import type { Cess } from "@/components/ConfigureTax";
-import InvoiceHeaderBar from "./HeaderBar";
-// InvoiceHeaderBar will be created next
+import SalesOrderHeaderBar from "./HeaderBar";
 
-export type InvoiceFormValues = {
-  type: "invoice" | "performa"; // Added type field to distinguish invoice types
-  invoiceTitle: string;
-  invoiceNumber: string;
-  date: string;
-  dueDate: string;
+export type SalesOrderFormValues = {
+  type: "salesOrder";
+  orderTitle: string;
+  orderNumber: string;
+  orderDate: string;
+  deliveryDate: string;
   clientId: string;
   clientDetails: {
     name: string;
@@ -40,9 +39,9 @@ export type InvoiceFormValues = {
   cessList: Cess[];
 };
 
-type InvoiceFormProps = {
-  initialValues: InvoiceFormValues;
-  onSubmit: (values: InvoiceFormValues) => void;
+type SalesOrderFormProps = {
+  initialValues: SalesOrderFormValues;
+  onSubmit: (values: SalesOrderFormValues) => void;
   mode?: "create" | "edit";
   onSuccess?: () => void;
   loading?: boolean;
@@ -50,13 +49,13 @@ type InvoiceFormProps = {
   mockProducts?: any[];
 };
 
-const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients, mockProducts, onSuccess, loading }) => {
+const SalesOrderForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients, mockProducts, onSuccess, loading }) => {
   const clients = mockClients || [];
   const products = mockProducts || [];
-  const [invoiceTitle, setInvoiceTitle] = useState(initialValues.invoiceTitle);
-  const [invoiceNumber] = useState(initialValues.invoiceNumber);
-  const [date, setDate] = useState(initialValues.date);
-  const [dueDate, setDueDate] = useState(initialValues.dueDate);
+  const [orderTitle, setOrderTitle] = useState(initialValues.orderTitle);
+  const [orderNumber] = useState(initialValues.orderNumber);
+  const [orderDate, setOrderDate] = useState(initialValues.orderDate);
+  const [deliveryDate, setDeliveryDate] = useState(initialValues.deliveryDate);
   const [clientId, setClientId] = useState(initialValues.clientId);
   const [showAddClient, setShowAddClient] = useState(false);
   const [clientDetails, setClientDetails] = useState(initialValues.clientDetails);
@@ -154,18 +153,18 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
 
   const handleFormSubmit = () => {
     const newErrors: { [key: string]: string } = {};
-    if (!invoiceTitle.trim()) newErrors.invoiceTitle = "Invoice title is required";
-    if (!invoiceNumber.trim()) newErrors.invoiceNumber = "Invoice number is required";
-    if (!date) newErrors.date = "Invoice date is required";
-    if (!items || items.length === 0 || items.every((item: any) => !item.name.trim())) newErrors.items = "At least one item is required";
+    if (!orderTitle.trim()) newErrors.orderTitle = "Order title is required";
+    if (!orderNumber.trim()) newErrors.orderNumber = "Order number is required";
+    if (!orderDate) newErrors.orderDate = "Order date is required";
+    if ( !items || items.length === 0 || items.every((item: any) => !item.name.trim()) ) newErrors.items = "At least one item is required";
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
     onSubmit({
-      type, 
-      invoiceTitle,
-      invoiceNumber,
-      date,
-      dueDate,
+      type,
+      orderTitle,
+      orderNumber,
+      orderDate,
+      deliveryDate,
       clientId,
       clientDetails,
       taxType,
@@ -187,21 +186,21 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
-      <InvoiceHeaderBar
-        title={invoiceTitle}
-        onTitleChange={e => setInvoiceTitle(e.target.value)}
-        invoiceNumber={invoiceNumber}
-        date={date}
-        onDateChange={setDate}
-        dueDate={dueDate}
-        onDueDateChange={setDueDate}
+      <SalesOrderHeaderBar
+        title={orderTitle}
+        onTitleChange={e => setOrderTitle(e.target.value)}
+        orderNumber={orderNumber}
+        date={orderDate}
+        onDateChange={setOrderDate}
+        deliveryDate={deliveryDate}
+        onDeliveryDateChange={setDeliveryDate}
         terms={terms}
         onTermsChange={setTerms}
       />
       <div className="mb-2">
-        {errors.invoiceTitle && <div className="text-red-500 text-xs">{errors.invoiceTitle}</div>}
-        {errors.invoiceNumber && <div className="text-red-500 text-xs">{errors.invoiceNumber}</div>}
-        {errors.date && <div className="text-red-500 text-xs">{errors.date}</div>}
+        {errors.orderTitle && <div className="text-red-500 text-xs">{errors.orderTitle}</div>}
+        {errors.orderNumber && <div className="text-red-500 text-xs">{errors.orderNumber}</div>}
+        {errors.orderDate && <div className="text-red-500 text-xs">{errors.orderDate}</div>}
       </div>
       <ClientSection
         clientId={clientId}
@@ -308,4 +307,4 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
   );
 };
 
-export default InvoiceForm;
+export default SalesOrderForm;

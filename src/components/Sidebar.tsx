@@ -1,5 +1,5 @@
 "use client";
-import { Dispatch, SetStateAction, useState } from "react";
+import React, { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   FiMenu,
@@ -18,156 +18,302 @@ import {
   FiChevronRight,
   FiUsers,
   FiBox,
+  FiChevronDown,
 } from "react-icons/fi";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import clsx from "clsx";
 
-const links = [
-  { name: "Dashboard", href: "/dashboard", icon: <FiHome /> },
-  { name: "Quotations", href: "/dashboard/quotation", icon: <FiFileText /> },
-  { name: "Clients", href: "/dashboard/clients", icon: <FiUsers /> },
-  { name: "Inventory", href: "/dashboard/inventory/category", icon: <FiBox /> },
-  { name: "Invoices", href: "/dashboard/invoices", icon: <FiDollarSign /> },
-  { name: "Receipts", href: "#", icon: <FiClipboard /> },
-  { name: "Sales Orders", href: "#", icon: <FiShoppingCart /> },
-  { name: "Credit Notes", href: "#", icon: <FiCreditCard /> },
-  { name: "Purchases", href: "#", icon: <FiArrowDownCircle /> },
-  { name: "Payout Receipts", href: "#", icon: <FiDollarSign /> },
+// Centralized sidebar config
+type SidebarChild = {
+  label: string;
+  href: string;
+};
+type SidebarSectionType = {
+  label: string;
+  icon?: React.ComponentType<any>;
+  href?: string;
+  basePath?: string;
+  children?: SidebarChild[];
+  variant?: string;
+};
+
+type SidebarNavItemProps = {
+  item: SidebarChild | SidebarSectionType;
+  collapsed: boolean;
+  pathname: string;
+  onClick: () => void;
+};
+
+type SidebarSectionProps = {
+  section: SidebarSectionType;
+  collapsed: boolean;
+  expanded: Record<string, boolean>;
+  setExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  pathname: string;
+  setMobileOpen: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+type SidebarProps = {
+  collapsed: boolean;
+  setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  mobileOpen: boolean;
+  setMobileOpen: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+const sidebarRoutes: SidebarSectionType[] = [
+  {
+    label: "Dashboard",
+    icon: FiHome,
+    href: "/dashboard",
+  },
+  {
+    label: "Sales",
+    icon: FiShoppingCart,
+    basePath: "/dashboard",
+    children: [
+      { label: "Clients", href: "/dashboard/clients" },
+      { label: "Invoices", href: "/dashboard/invoices" },
+      { label: "Quotations", href: "/dashboard/quotation" },
+      { label: "Performa Invoice", href: "/dashboard/performa-invoice" },
+      { label: "Sales Orders", href: "/dashboard/sales-orders" },
+      { label: "Receipts", href: "/dashboard/receipts" },
+      { label: "Delivery Challan", href: "/dashboard/delivery-challan" },
+    ],
+  },
+  {
+    label: "Purchases",
+    icon: FiArrowDownCircle,
+    basePath: "/dashboard",
+    children: [
+      { label: "Purchases", href: "/dashboard/purchases" },
+      { label: "Purchase Orders", href: "/dashboard/purchase-orders" },
+      { label: "Payout Receipts", href: "/dashboard/payout-receipts" },
+      { label: "Credit Notes", href: "/dashboard/credit-notes" },
+    ],
+  },
+  {
+    label: "Inventory",
+    icon: FiBox,
+    basePath: "/dashboard/inventory",
+    children: [
+      { label: "Category", href: "/dashboard/inventory/category" },
+      { label: "All Items", href: "/dashboard/inventory/all-items" },
+    ],
+  },
 ];
 
-interface SidebarProps {
-  collapsed: boolean;
-  setCollapsed: Dispatch<SetStateAction<boolean>>;
-  mobileOpen: boolean;
-  setMobileOpen: Dispatch<SetStateAction<boolean>>;
+const sidebarFooter: SidebarSectionType[] = [
+  { label: "Settings", href: "#settings", icon: FiSettings },
+  { label: "Help", href: "#help", icon: FiHelpCircle },
+  { label: "Logout", href: "#logout", icon: FiLogOut, variant: "destructive" },
+];
+
+function isSectionActive(section: SidebarSectionType, pathname: string): boolean {
+  if (section.children) {
+    return section.children.some((child: SidebarChild) => pathname.startsWith(child.href));
+  }
+  if (section.href) {
+    return pathname === section.href;
+  }
+  return false;
 }
 
-export default function Sidebar({
-  collapsed,
-  setCollapsed,
-  mobileOpen,
-  setMobileOpen,
-}: SidebarProps) {
-  const pathname = usePathname();
+const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, collapsed, pathname, onClick }) => {
+  const Icon = (item as SidebarSectionType).icon;
+  const isActive = pathname === item.href;
+  return (
+    <a
+      href={item.href}
+      onClick={onClick}
+      className={clsx(
+        "group flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out",
+        collapsed ? "justify-center" : "gap-3",
+        isActive
+          ? "bg-[var(--color-sidebar-primary)] text-[var(--color-sidebar-primary-foreground)] shadow-sm"
+          : (item as SidebarSectionType).variant === "destructive"
+          ? "text-[var(--color-sidebar-destructive)] hover:bg-[var(--color-sidebar-destructive-hover)] hover:text-[var(--color-sidebar-destructive-foreground)]"
+          : "text-[var(--color-sidebar-foreground)] hover:bg-[var(--color-sidebar-accent)] hover:text-[var(--color-sidebar-accent-foreground)]"
+      )}
+      title={collapsed ? item.label : undefined}
+    >
+      {Icon && <Icon className={clsx(collapsed ? "text-lg" : "text-base", "flex-shrink-0")} />}
+      {!collapsed && <span className="truncate">{item.label}</span>}
+    </a>
+  );
+};
 
-  // Force full width for mobile, collapsible only on desktop
-  const sidebarWidth = collapsed ? "md:w-20 w-56" : "w-56";
+const SidebarSection: React.FC<SidebarSectionProps> = ({ section, collapsed, expanded, setExpanded, pathname, setMobileOpen }) => {
+  const Icon = section.icon;
+  const isActive = isSectionActive(section, pathname);
+  const isExpanded = expanded[section.label] === true;
+  // Always allow toggling, even if a child is active
+  const toggleExpand = () => setExpanded(prev => ({ ...prev, [section.label]: !prev[section.label] }));
+
+  if (!section.children) {
+    // Single nav item
+    return (
+      <SidebarNavItem
+        item={section}
+        collapsed={collapsed}
+        pathname={pathname}
+        onClick={() => setMobileOpen(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="pt-2">
+      {!collapsed ? (
+        <div>
+          <button
+            onClick={toggleExpand}
+            className={clsx(
+              "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out",
+              isActive ? "text-[var(--color-sidebar-primary)] " : "text-[var(--color-sidebar-foreground)] hover:bg-[var(--color-sidebar-accent)] hover:text-[var(--color-sidebar-accent-foreground)]"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              {Icon && <Icon className="text-base flex-shrink-0" />}
+              <span>{section.label}</span>
+            </div>
+            <FiChevronDown className={clsx("transition-transform duration-200", isExpanded && "rotate-180")} size={14} />
+          </button>
+          <div
+            className={clsx(
+              "overflow-hidden transition-all duration-300 ease-in-out",
+              isExpanded ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+            )}
+          >
+            <div className="pl-6 pt-1 space-y-1">
+              {section.children.map((child: SidebarChild) => (
+                <SidebarNavItem
+                  key={child.label}
+                  item={child}
+                  collapsed={collapsed}
+                  pathname={pathname}
+                  onClick={() => setMobileOpen(false)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={toggleExpand}
+          className={clsx(
+            "w-full flex items-center justify-center px-3 py-2.5 rounded-lg",
+            isActive ? "bg-[var(--color-sidebar-primary)] text-[var(--color-sidebar-primary-foreground)]" : "text-[var(--color-sidebar-foreground)] hover:bg-[var(--color-sidebar-accent)] hover:text-[var(--color-sidebar-accent-foreground)]"
+          )}
+          title={section.label}
+        >
+          {Icon && <Icon className="text-lg flex-shrink-0" />}
+        </button>
+      )}
+    </div>
+  );
+};
+
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
+  const pathname = usePathname();
+  const [expanded, setExpanded] = useState({});
+
+  // Restore expanded state from sessionStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("sidebarExpanded");
+      if (stored) setExpanded(JSON.parse(stored));
+    }
+  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("sidebarExpanded", JSON.stringify(expanded));
+    }
+  }, [expanded]);
+
+  // Auto-close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname, setMobileOpen]);
 
   return (
     <>
       {/* Mobile Overlay */}
-      <div
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity md:hidden h-screen ${
-          mobileOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setMobileOpen(false)}
-      />
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`bg-[var(--color-sidebar)] border-r border-[var(--color-sidebar-border)] h-screen flex flex-col fixed z-50 top-0 left-0 transition-all duration-300 shadow-lg
-        ${sidebarWidth}
-        ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
-        `}
+        className={clsx(
+          "fixed top-0 left-0 z-50 h-full bg-[var(--color-sidebar)] text-[var(--color-sidebar-foreground)] border-r border-[var(--color-sidebar-border)] transition-all duration-300 ease-in-out shadow-lg",
+          collapsed ? "w-16" : "w-56",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          "md:translate-x-0"
+        )}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-[var(--color-sidebar-border)] justify-between">
-          <div className="flex items-center gap-2">
-            {!collapsed && (
-              <>
-                <span className="text-2xl font-bold text-[var(--color-sidebar-primary)]">CRM</span>
-                <span className="text-lg font-semibold text-[var(--color-sidebar-foreground)] hidden md:inline">
-                  Accounts
-                </span>
-              </>
-            )}
-          </div>
-          {/* Collapse toggle (only on desktop) */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-sidebar-border)]">
+          {!collapsed && (
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-[var(--color-sidebar-foreground)]">CRM</h1>
+              <span className="text-sm font-medium text-[var(--color-muted-foreground)]">Accounts</span>
+            </div>
+          )}
+          {/* Desktop collapse toggle */}
           <button
-            className="hidden md:flex items-center justify-center p-1 rounded hover:bg-[var(--color-sidebar-accent)]/20 text-[var(--color-sidebar-primary)]"
-            onClick={() => setCollapsed((c) => !c)}
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-sidebar-accent)] text-[var(--color-muted-foreground)] transition-colors duration-200"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {collapsed ? (
-              <FiChevronRight size={20} />
-            ) : (
-              <FiChevronLeft size={20} />
-            )}
+            {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={16} />}
           </button>
-          {/* Mobile Hamburger */}
+          {/* Mobile menu toggle */}
           <button
-            className="md:hidden flex items-center justify-center p-1 rounded hover:bg-[var(--color-sidebar-accent)]/20 text-[var(--color-sidebar-primary)]"
-            onClick={() => setMobileOpen((o) => !o)}
-            aria-label="Toggle Sidebar"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-sidebar-accent)] text-[var(--color-muted-foreground)] transition-colors duration-200"
+            aria-label="Toggle menu"
           >
-            {mobileOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            {mobileOpen ? <FiX size={20} /> : <FiMenu size={20} />}
           </button>
         </div>
 
-        {/* Navigation Links */}
-        <nav
-          className={`flex-1 flex-col gap-1 px-2 py-4 flex ${
-            collapsed ? "md:items-center" : ""
-          }`}
-        >
-          {links.map((link) => {
-            // Determine if the link is active based on the current pathname
-            const isActive = link.href === pathname;
-            return (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={() => {
-                  setMobileOpen(false); // auto-close on mobile
-                }}
-                className={`flex items-center ${
-                  collapsed ? "md:justify-center" : "gap-3"
-                } rounded px-4 py-2 text-[var(--color-sidebar-foreground)] font-medium transition hover:bg-[var(--color-sidebar-accent)]/20 cursor-pointer mb-1 ${
-                  isActive
-                    ? "bg-[var(--color-sidebar-accent)] text-[var(--color-sidebar-accent-foreground)] font-semibold"
-                    : ""
-                }`}
-              >
-                <span className="text-lg mr-3 md:mr-0">{link.icon}</span>
-                <span className={`inline md:${collapsed ? "hidden" : "inline"}`}>
-                  {link.name}
-                </span>
-              </a>
-            );
-          })}
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          <div className="space-y-1">
+            {sidebarRoutes.map((section: SidebarSectionType) => (
+              <SidebarSection
+                key={section.label}
+                section={section}
+                collapsed={collapsed}
+                expanded={expanded}
+                setExpanded={setExpanded}
+                pathname={pathname}
+                setMobileOpen={setMobileOpen}
+              />
+            ))}
+          </div>
         </nav>
 
         {/* Footer */}
-        <div
-          className={`mt-auto px-4 py-4 border-t border-[var(--color-sidebar-border)] flex flex-col gap-2 ${
-            collapsed ? "md:items-center md:px-0" : ""
-          }`}
-        >
-          <a
-            href="#settings"
-            className={`flex items-center gap-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-sidebar-primary)] text-sm font-medium ${
-              collapsed ? "md:justify-center" : ""
-            }`}
-          >
-            <FiSettings /> {!collapsed && "Settings"}
-          </a>
-          <a
-            href="#help"
-            className={`flex items-center gap-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-sidebar-primary)] text-sm font-medium ${
-              collapsed ? "md:justify-center" : ""
-            }`}
-          >
-            <FiHelpCircle /> {!collapsed && "Help"}
-          </a>
-          <a
-            href="#logout"
-            className={`flex items-center gap-2 text-[var(--color-destructive)] hover:text-[var(--color-destructive)]/80 text-sm font-medium ${
-              collapsed ? "md:justify-center" : ""
-            }`}
-          >
-            <FiLogOut /> {!collapsed && "Logout"}
-          </a>
+        <div className="px-3 py-4 border-t border-[var(--color-sidebar-border)]">
+          <div className="space-y-1">
+            {sidebarFooter.map((item: SidebarSectionType) => (
+              <SidebarNavItem
+                key={item.label}
+                item={item}
+                collapsed={collapsed}
+                pathname={pathname}
+                onClick={() => setMobileOpen(false)}
+              />
+            ))}
+          </div>
         </div>
       </aside>
     </>
   );
-}
+};
+
+export default Sidebar;

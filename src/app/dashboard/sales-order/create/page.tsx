@@ -15,7 +15,7 @@ const generateInvoiceNumber = () => {
 };
 
 const defaultInitialValues: InvoiceFormValues = {
-  type: "invoice",
+  type: "performa",
   invoiceTitle: "",
   invoiceNumber: generateInvoiceNumber(),
   date: new Date().toISOString().slice(0, 10),
@@ -68,7 +68,7 @@ export default function CreateInvoicePage() {
     setLoading(true);
     try {
       await createInvoice(values);
-      router.push("/dashboard/invoice");
+      router.push("/dashboard/performa-invoice");
     } finally {
       setLoading(false);
     }
