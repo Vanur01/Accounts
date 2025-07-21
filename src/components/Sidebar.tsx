@@ -1,5 +1,5 @@
 "use client";
-import React, { Dispatch, SetStateAction, useState, useEffect } from "react";
+import React, { Dispatch, SetStateAction, useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
   FiMenu,
@@ -22,6 +22,7 @@ import {
 } from "react-icons/fi";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import clsx from "clsx";
+import Link from "next/link";
 
 // Centralized sidebar config
 type SidebarChild = {
@@ -73,8 +74,8 @@ const sidebarRoutes: SidebarSectionType[] = [
     children: [
       { label: "Clients", href: "/dashboard/clients" },
       { label: "Invoices", href: "/dashboard/invoices" },
-      { label: "Quotations", href: "/dashboard/quotation" },
-      { label: "Performa Invoice", href: "/dashboard/performa-invoice" },
+      { label: "Quotations", href: "/dashboard/quotations" },
+      { label: "Performa Invoice", href: "/dashboard/performa-invoices" },
       { label: "Sales Orders", href: "/dashboard/sales-orders" },
       { label: "Receipts", href: "/dashboard/receipts" },
       { label: "Delivery Challan", href: "/dashboard/delivery-challan" },
@@ -97,7 +98,7 @@ const sidebarRoutes: SidebarSectionType[] = [
     basePath: "/dashboard/inventory",
     children: [
       { label: "Category", href: "/dashboard/inventory/category" },
-      { label: "All Items", href: "/dashboard/inventory/all-items" },
+      { label: "Items", href: "/dashboard/inventory/items" },
     ],
   },
 ];
@@ -149,6 +150,17 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ section, collapsed, exp
   // Always allow toggling, even if a child is active
   const toggleExpand = () => setExpanded(prev => ({ ...prev, [section.label]: !prev[section.label] }));
 
+  const [contentHeight, setContentHeight] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isExpanded && contentRef.current) {
+      setContentHeight(contentRef.current.scrollHeight);
+    } else {
+      setContentHeight(0);
+    }
+  }, [isExpanded, section.children?.length]);
+
   if (!section.children) {
     // Single nav item
     return (
@@ -179,10 +191,13 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ section, collapsed, exp
             <FiChevronDown className={clsx("transition-transform duration-200", isExpanded && "rotate-180")} size={14} />
           </button>
           <div
-            className={clsx(
-              "overflow-hidden transition-all duration-300 ease-in-out",
-              isExpanded ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
-            )}
+            ref={contentRef}
+            style={{
+              maxHeight: isExpanded ? `${contentHeight}px` : '0px',
+              opacity: isExpanded ? 1 : 0,
+              transition: 'max-height 0.3s ease, opacity 0.3s ease',
+              overflow: 'hidden',
+            }}
           >
             <div className="pl-6 pt-1 space-y-1">
               {section.children.map((child: SidebarChild) => (
@@ -249,67 +264,86 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobileOpen, 
       <aside
         className={clsx(
           "fixed top-0 left-0 z-50 h-full bg-[var(--color-sidebar)] text-[var(--color-sidebar-foreground)] border-r border-[var(--color-sidebar-border)] transition-all duration-300 ease-in-out shadow-lg",
+          "flex flex-col justify-between",
           collapsed ? "w-16" : "w-56",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "md:translate-x-0"
         )}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-sidebar-border)]">
-          {!collapsed && (
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-[var(--color-sidebar-foreground)]">CRM</h1>
-              <span className="text-sm font-medium text-[var(--color-muted-foreground)]">Accounts</span>
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-sidebar-border)]">
+            {!collapsed && (
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-[var(--color-sidebar-foreground)]">CRM</h1>
+                <span className="text-sm font-medium text-[var(--color-muted-foreground)]">Accounts</span>
+              </div>
+            )}
+            {/* Desktop collapse toggle */}
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-sidebar-accent)] text-[var(--color-muted-foreground)] transition-colors duration-200"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={16} />}
+            </button>
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-sidebar-accent)] text-[var(--color-muted-foreground)] transition-colors duration-200"
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-3 py-4 overflow-y-auto">
+            <div className="space-y-1">
+              {sidebarRoutes.map((section: SidebarSectionType) => (
+                <SidebarSection
+                  key={section.label}
+                  section={section}
+                  collapsed={collapsed}
+                  expanded={expanded}
+                  setExpanded={setExpanded}
+                  pathname={pathname}
+                  setMobileOpen={setMobileOpen}
+                />
+              ))}
             </div>
-          )}
-          {/* Desktop collapse toggle */}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-sidebar-accent)] text-[var(--color-muted-foreground)] transition-colors duration-200"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={16} />}
-          </button>
-          {/* Mobile menu toggle */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-sidebar-accent)] text-[var(--color-muted-foreground)] transition-colors duration-200"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <FiX size={20} /> : <FiMenu size={20} />}
-          </button>
+          </nav>
+
+          {/* Footer */}
+          <div className="px-3 py-4 border-t border-[var(--color-sidebar-border)]">
+            <div className="space-y-1">
+              {sidebarFooter.map((item: SidebarSectionType) => (
+                <SidebarNavItem
+                  key={item.label}
+                  item={item}
+                  collapsed={collapsed}
+                  pathname={pathname}
+                  onClick={() => setMobileOpen(false)}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <div className="space-y-1">
-            {sidebarRoutes.map((section: SidebarSectionType) => (
-              <SidebarSection
-                key={section.label}
-                section={section}
-                collapsed={collapsed}
-                expanded={expanded}
-                setExpanded={setExpanded}
-                pathname={pathname}
-                setMobileOpen={setMobileOpen}
-              />
-            ))}
-          </div>
-        </nav>
-
-        {/* Footer */}
-        <div className="px-3 py-4 border-t border-[var(--color-sidebar-border)]">
-          <div className="space-y-1">
-            {sidebarFooter.map((item: SidebarSectionType) => (
-              <SidebarNavItem
-                key={item.label}
-                item={item}
-                collapsed={collapsed}
-                pathname={pathname}
-                onClick={() => setMobileOpen(false)}
-              />
-            ))}
-          </div>
+        {/* Profile Section at the bottom of sidebar content */}
+        <div className={`px-3 py-3 border-t border-[var(--color-sidebar-border)] flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+          <img
+            src="/avatar.png"
+            alt="Avatar"
+            className="w-9 h-9 rounded-full object-cover border border-[var(--color-sidebar-border)] flex-shrink-0"
+            title={collapsed ? 'Santosh Kumar' : undefined}
+          />
+          {!collapsed && (
+            <div className="hidden md:block flex-1 min-w-0">
+              <div className="font-medium text-[var(--color-sidebar-foreground)] truncate">Santosh Kumar</div>
+              <Link href="/dashboard/bussiness" className="text-xs text-[var(--color-muted-foreground)] hover:underline block w-full text-left mt-1">Business Details</Link>
+            </div>
+          )}
         </div>
       </aside>
     </>

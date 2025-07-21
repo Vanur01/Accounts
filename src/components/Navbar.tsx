@@ -13,7 +13,7 @@ interface NavbarProps {
 
 export default function Navbar({ title = "Dashboard", onOpenSidebar, collapsed }: NavbarProps) {
   return (
-    <header className={`w-full h-16 flex items-center justify-between px-4 sm:px-6 border-b border-[var(--color-border)] bg-[var(--color-card)] sticky top-0 z-20 shadow-sm transition-all duration-300`}>
+    <header className={`w-full h-16 flex items-center justify-between px-4 sm:px-6 border-b border-[var(--color-border)] bg-[var(--color-card)] sticky top-0 z-20 transition-all duration-300`}>
       {/* Left: Hamburger (mobile) + Logo/Title */}
       <div className="flex items-center gap-3">
         {/* Hamburger for mobile */}

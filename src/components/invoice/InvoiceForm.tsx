@@ -9,16 +9,24 @@ import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";
 import type { Cess } from "@/components/ConfigureTax";
 import InvoiceHeaderBar from "./HeaderBar";
+import YourDetailsSection from "@/components/BussinessDetailsSection";
 // InvoiceHeaderBar will be created next
 
 export type InvoiceFormValues = {
-  type: "invoice" | "performa"; // Added type field to distinguish invoice types
+  type: "invoice" | "performa";
   invoiceTitle: string;
   invoiceNumber: string;
   date: string;
   dueDate: string;
   clientId: string;
   clientDetails: {
+    name: string;
+    gstin: string;
+    address: string;
+    contact: string;
+    email: string;
+  };
+  businessDetails: {
     name: string;
     gstin: string;
     address: string;
@@ -74,6 +82,9 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
   const [showSignature, setShowSignature] = useState(initialValues.showSignature);
   const [cessList, setCessList] = useState<Cess[]>(initialValues.cessList || []);
   const [type] = useState(initialValues.type);
+
+  // Use businessDetails from initialValues
+  const [businessDetails] = useState(initialValues.businessDetails);
 
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
@@ -161,13 +172,14 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
     onSubmit({
-      type, 
+      type,
       invoiceTitle,
       invoiceNumber,
       date,
       dueDate,
       clientId,
       clientDetails,
+      businessDetails,
       taxType,
       items,
       discountType,
@@ -203,16 +215,24 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
         {errors.invoiceNumber && <div className="text-red-500 text-xs">{errors.invoiceNumber}</div>}
         {errors.date && <div className="text-red-500 text-xs">{errors.date}</div>}
       </div>
-      <ClientSection
-        clientId={clientId}
-        onClientSelect={handleClientSelect}
-        showAddClient={showAddClient}
-        setShowAddClient={setShowAddClient}
-        clientDetails={clientDetails}
-        setClientDetails={setClientDetails}
-        handleAddClient={handleAddClient}
-        mockClients={clients}
-      />
+      {/* Flex row for business and client details */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="md:w-1/2">
+          <YourDetailsSection businessDetails={businessDetails} hideSelector />
+        </div>
+        <div className="md:w-1/2">
+          <ClientSection
+            clientId={clientId}
+            onClientSelect={handleClientSelect}
+            showAddClient={showAddClient}
+            setShowAddClient={setShowAddClient}
+            clientDetails={clientDetails}
+            setClientDetails={setClientDetails}
+            handleAddClient={handleAddClient}
+            mockClients={clients}
+          />
+        </div>
+      </div>
       <ItemTable
         items={items}
         setItems={setItems}

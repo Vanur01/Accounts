@@ -24,12 +24,13 @@ export default function InvoicesPage() {
   const allInvoices = useInvoiceStore(state => state.invoices);
   const invoices = allInvoices.filter(inv => inv.type === "performa");
   const isEmpty = invoices.length === 0;
+  
   return (
     <div className="max-w-5xl mx-auto rounded-lg shadow p-4 sm:p-8 bg-[var(--color-card)]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
         <h1 className="text-2xl font-bold text-[var(--color-card-foreground)]">Invoices</h1>
         <a
-          href="/dashboard/performa-invoice/create"
+          href="/dashboard/performa-invoices/create"
           className="px-4 py-2 rounded transition bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:bg-[var(--color-primary)]/80"
         >
           + New Performa Invoice
@@ -90,7 +91,7 @@ export default function InvoicesPage() {
                       <PopoverContent className="w-44 p-2" align="end">
                         <div className="flex flex-col gap-1">
                           <a href="#" className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-primary)] text-sm" aria-label="Preview Invoice">Preview</a>
-                          <Link href={`/dashboard/invoices/edit/${inv.invoiceNumber}`} className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] text-sm" aria-label="Edit Invoice">Edit</Link>
+                          <Link href={`/dashboard/performa-invoices/edit/${inv.invoiceNumber}`} className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] text-sm" aria-label="Edit Invoice">Edit</Link>
                           <a href="#" className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] text-sm" aria-label="Download PDF">Download PDF</a>
                         </div>
                       </PopoverContent>

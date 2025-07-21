@@ -1,20 +1,36 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useMemo } from "react";
+import type { Vendor } from "./useVendorStore";
 
 export type Item = {
   id: number;
   name: string;
+  sku?: string;
   description: string;
-  price: number;
   type: string;
-  category?: string; // Added category field
+  category?: string;
+  subcategory?: string;
   hsn?: string;
   unit?: string;
-  igst?: number;
-  sgst?: number;
-  cgst?: number;
-  subcategoryId?: number; // Add subcategoryId for subcategory association
+  weight?: string;
+  length?: string;
+  width?: string;
+  height?: string;
+  dimensionUnit?: string;
+  image?: File | null;
+  igst?: number | string;
+  sgst?: number | string;
+  cgst?: number | string;
+  // Sales Information
+  sellingPrice?: number | string;
+  salesAccount?: string;
+  salesDescription?: string;
+  // Purchase Information
+  costPrice?: number | string;
+  purchaseAccount?: string;
+  purchaseDescription?: string;
+  preferredVendor?: number | Vendor | string;
 };
 
 interface ItemStore {
@@ -32,7 +48,7 @@ export const useItemStore = create<ItemStore>()(
           const newItem = {
             id: state.items.length ? state.items[state.items.length - 1].id + 1 : 1,
             ...item,
-            category: item.category || "", // Ensure category is present
+            category: item.category || "",
           };
           const updatedItems = [...state.items, newItem];
           console.log('Item added:', newItem);

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import SubcategoryModal from "@/components/SubcategoryModal";
 
 export default function SubcategoriesPage() {
   const searchParams = useSearchParams();
@@ -44,12 +45,12 @@ export default function SubcategoriesPage() {
   };
 
   // Handle create or edit
-  const handleSave = () => {
-    if (name.trim() === "") return;
+  const handleSave = (modalName: string, modalDescription: string) => {
+    if (modalName.trim() === "") return;
     if (editId !== null) {
-      editSubcategory(editId, name.trim(), description.trim());
+      editSubcategory(editId, modalName.trim(), modalDescription.trim());
     } else {
-      addSubcategory(name.trim(), description.trim(), categoryId);
+      addSubcategory(modalName.trim(), modalDescription.trim(), categoryId);
     }
     setModalOpen(false);
     setName("");
@@ -130,32 +131,14 @@ export default function SubcategoriesPage() {
         </table>
       </div>
       {/* Create/Edit Modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editId !== null ? "Edit Subcategory" : "Add Subcategory"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              autoFocus
-              placeholder="Subcategory name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
-            />
-            <Input
-              placeholder="Description (optional)"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setModalOpen(false)} variant="outline">Cancel</Button>
-            <Button onClick={handleSave}>{editId !== null ? "Save" : "Add"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SubcategoryModal
+        open={modalOpen}
+        mode={editId !== null ? "edit" : "create"}
+        initialName={name}
+        initialDescription={description}
+        onSave={handleSave}
+        onCancel={() => setModalOpen(false)}
+      />
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteId !== null} onOpenChange={open => { if (!open) setDeleteId(null); }}>
         <DialogContent>

@@ -1,26 +1,25 @@
 "use client";
 
-// Copy and adapt from quotation create page
 import React, { useState } from "react";
-import InvoiceForm, { InvoiceFormValues } from "@/components/invoice/InvoiceForm";
+import SalesOrderForm, { SalesOrderFormValues } from "@/components/salesOrder/SalesOrderForm";
 import { useClientStore } from "@/stores/useClientStore";
 import { useItemStore } from "@/stores/useItemStore";
-import { useInvoiceStore } from "@/stores/useinvoiceStore";
-import { useRouter } from "next/navigation"
+import { useSalesOrderStore } from "@/stores/useSalesOrderStore";
+import { useRouter } from "next/navigation";
 import { useBussinessStore } from "@/stores/useBussinessStore";
 
-const generateInvoiceNumber = () => {
+const generateOrderNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random
-  return `INV-${datePart}-${randomPart}`;
+  return `SO-${datePart}-${randomPart}`;
 };
 
-export default function CreateInvoicePage() {
-  const router = useRouter();
+export default function CreateSalesOrderPage() {
   const { clients } = useClientStore();
   const { items } = useItemStore();
+  const createSalesOrder = useSalesOrderStore((state) => state.createSalesOrder);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const createInvoice = useInvoiceStore((state) => state.createInvoice);
   const { details } = useBussinessStore();
   const businessStoreDetails = details;
 
@@ -36,12 +35,16 @@ export default function CreateInvoicePage() {
     email: "",
   };
 
-  const defaultInitialValues: InvoiceFormValues = {
-    type: "invoice",
-    invoiceTitle: "",
-    invoiceNumber: generateInvoiceNumber(),
-    date: new Date().toISOString().slice(0, 10),
-    dueDate: "",
+  // Log for debugging
+  console.log("businessStoreDetails", businessStoreDetails);
+  console.log("mappedBusinessDetails", mappedBusinessDetails);
+
+  const defaultInitialValues: SalesOrderFormValues = {
+    type: "salesOrder",
+    orderTitle: "",
+    orderNumber: generateOrderNumber(),
+    orderDate: new Date().toISOString().slice(0, 10),
+    deliveryDate: "",
     clientId: "",
     clientDetails: {
       name: "",
@@ -80,21 +83,18 @@ export default function CreateInvoicePage() {
     showSignature: false,
   };
 
-  console.log(defaultInitialValues)
-
-
-  const handleCreate = async (values: InvoiceFormValues) => {
+  const handleCreate = async (values: SalesOrderFormValues) => {
     setLoading(true);
     try {
-      await createInvoice(values);
-      router.push("/dashboard/invoices");
+      await createSalesOrder(values);
+      router.push("/dashboard/sales-orders");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <InvoiceForm
+    <SalesOrderForm
       initialValues={defaultInitialValues}
       onSubmit={handleCreate}
       mode="create"

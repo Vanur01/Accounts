@@ -66,7 +66,7 @@ export default function EditQuotationPage() {
     setLoading(true);
     try {
       await updateQuotation(values.quotationNumber, values);
-      router.push("/dashboard/quotation");
+      router.push("/dashboard/quotations");
     } finally {
       setLoading(false);
     }

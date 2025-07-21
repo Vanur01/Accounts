@@ -6,6 +6,7 @@ import { useInvoiceStore } from "@/stores/useinvoiceStore";
 import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/useClientStore";
 import { useItemStore } from "@/stores/useItemStore";
+import { useBussinessStore } from "@/stores/useBussinessStore";
 
 export default function EditInvoicePage() {
   const params = useParams();
@@ -14,10 +15,36 @@ export default function EditInvoicePage() {
   const { items } = useItemStore();
   const { invoices, updateInvoice } = useInvoiceStore();
   const [loading, setLoading] = useState(false);
+  const { details: businessStoreDetails } = useBussinessStore();
 
   // Get invoice number from URL (id param)
   const invoiceNumber = Array.isArray(params.id) ? params.id[0] : params.id;
-  const initialValues = invoices.find(inv => inv.invoiceNumber === invoiceNumber);
+  const invoice = invoices.find(inv => inv.invoiceNumber === invoiceNumber);
+
+  const mappedBusinessDetails = businessStoreDetails
+    ? {
+        name: businessStoreDetails.businessName,
+        gstin: businessStoreDetails.gstNumber || "",
+        address: businessStoreDetails.website || "",
+        contact: businessStoreDetails.phone,
+        email: "",
+      }
+    : {
+        name: "",
+        gstin: "",
+        address: "",
+        contact: "",
+        email: "",
+      };
+
+  const initialValues = invoice
+    ? {
+        ...invoice,
+        businessDetails: invoice.businessDetails || mappedBusinessDetails,
+      }
+    : undefined;
+
+  console.log(initialValues)
 
   if (!initialValues) {
     return <div className="p-8 text-center">Loading...</div>;
@@ -27,7 +54,7 @@ export default function EditInvoicePage() {
     setLoading(true);
     try {
       await updateInvoice(values.invoiceNumber, values);
-      router.push("/dashboard/performa-invoice");
+      router.push("/dashboard/invoices");
     } finally {
       setLoading(false);
     }

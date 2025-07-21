@@ -72,7 +72,7 @@ export default function QuotationListPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
         <h1 className="text-2xl font-bold text-[var(--color-card-foreground)]">Quotations</h1>
         <a
-          href="/dashboard/quotation/create"
+          href="/dashboard/quotations/create"
           className="px-4 py-2 rounded transition bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:bg-[var(--color-primary)]/80"
         >
           + New Quotation
@@ -139,7 +139,7 @@ export default function QuotationListPage() {
                       <PopoverContent className="w-44 p-2" align="end">
                         <div className="flex flex-col gap-1">
                           <a href="#" className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-primary)] text-sm" aria-label="Preview Quotation">Preview</a>
-                          <Link href={`/dashboard/quotation/edit/${q.quotationNumber}`} className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] text-sm" aria-label="Edit Quotation">Edit</Link>
+                          <Link href={`/dashboard/quotations/edit/${q.quotationNumber}`} className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] text-sm" aria-label="Edit Quotation">Edit</Link>
                           <a href="#" className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] text-sm" aria-label="Download PDF">Download PDF</a>
                         </div>
                       </PopoverContent>

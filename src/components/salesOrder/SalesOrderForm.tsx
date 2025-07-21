@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SalesOrderHeaderBar from "./HeaderBar";
 import ClientSection from "../ClientSection";
 import ItemTable from "../ItemTable";
 import SummaryCard from "../SummaryCard";
@@ -8,7 +9,7 @@ import AddClientModal from "@/components/AddClientModal";
 import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";
 import type { Cess } from "@/components/ConfigureTax";
-import SalesOrderHeaderBar from "./HeaderBar";
+import YourDetailsSection from "@/components/BussinessDetailsSection";
 
 export type SalesOrderFormValues = {
   type: "salesOrder";
@@ -18,6 +19,13 @@ export type SalesOrderFormValues = {
   deliveryDate: string;
   clientId: string;
   clientDetails: {
+    name: string;
+    gstin: string;
+    address: string;
+    contact: string;
+    email: string;
+  };
+  businessDetails: {
     name: string;
     gstin: string;
     address: string;
@@ -59,6 +67,7 @@ const SalesOrderForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClie
   const [clientId, setClientId] = useState(initialValues.clientId);
   const [showAddClient, setShowAddClient] = useState(false);
   const [clientDetails, setClientDetails] = useState(initialValues.clientDetails);
+  const [businessDetails] = useState(initialValues.businessDetails);
   const [taxType, setTaxType] = useState(initialValues.taxType);
   const [items, setItems] = useState(initialValues.items);
   const [discountType, setDiscountType] = useState(initialValues.discountType);
@@ -142,7 +151,12 @@ const SalesOrderForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClie
   let tax = 0;
   if (taxType === "IGST") tax = items.reduce((sum: number, item: any) => sum + ((item.amount - (item.discount || 0)) * (Number(item.igst) || 0) / 100), 0);
   if (taxType === "SGST_CGST") tax = items.reduce((sum: number, item: any) => sum + ((item.amount - (item.discount || 0)) * ((Number(item.sgst) || 0) + (Number(item.cgst) || 0)) / 100), 0);
-  let total = taxable + tax + Number(shipping || 0);
+  // Add cess
+  let cessTotal = 0;
+  cessList.filter(c => c.showInInvoice).forEach(cess => {
+    cessTotal += items.reduce((sum: number, item: any) => sum + ((item.amount - (item.discount || 0)) * (Number(item[cess.name]) || 0) / 100), 0);
+  });
+  let total = taxable + tax + cessTotal + Number(shipping || 0);
   if (roundOff) total = Math.round(total);
 
   const handleAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,6 +181,7 @@ const SalesOrderForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClie
       deliveryDate,
       clientId,
       clientDetails,
+      businessDetails,
       taxType,
       items,
       discountType,
@@ -197,21 +212,30 @@ const SalesOrderForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClie
         terms={terms}
         onTermsChange={setTerms}
       />
+      {/* Error messages for header fields */}
       <div className="mb-2">
         {errors.orderTitle && <div className="text-red-500 text-xs">{errors.orderTitle}</div>}
         {errors.orderNumber && <div className="text-red-500 text-xs">{errors.orderNumber}</div>}
         {errors.orderDate && <div className="text-red-500 text-xs">{errors.orderDate}</div>}
       </div>
-      <ClientSection
-        clientId={clientId}
-        onClientSelect={handleClientSelect}
-        showAddClient={showAddClient}
-        setShowAddClient={setShowAddClient}
-        clientDetails={clientDetails}
-        setClientDetails={setClientDetails}
-        handleAddClient={handleAddClient}
-        mockClients={clients}
-      />
+      {/* Flex row for business and client details */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="md:w-1/2">
+          <YourDetailsSection businessDetails={businessDetails} hideSelector />
+        </div>
+        <div className="md:w-1/2">
+          <ClientSection
+            clientId={clientId}
+            onClientSelect={handleClientSelect}
+            showAddClient={showAddClient}
+            setShowAddClient={setShowAddClient}
+            clientDetails={clientDetails}
+            setClientDetails={setClientDetails}
+            handleAddClient={handleAddClient}
+            mockClients={clients}
+          />
+        </div>
+      </div>
       <ItemTable
         items={items}
         setItems={setItems}
@@ -230,6 +254,7 @@ const SalesOrderForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClie
         setCessList={setCessList}
         mockProducts={products}
       />
+      {/* Error message for items */}
       {errors.items && <div className="text-red-500 text-xs mb-2">{errors.items}</div>}
       <SummaryCard
         subtotal={subtotal}
@@ -245,8 +270,8 @@ const SalesOrderForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClie
         total={total}
       />
       <AdditionalInputs
-        terms={""}
-        setTerms={() => {}}
+        terms={terms}
+        setTerms={setTerms}
         notes={notes}
         setNotes={setNotes}
         attachments={attachments}

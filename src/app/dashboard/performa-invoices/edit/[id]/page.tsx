@@ -27,7 +27,7 @@ export default function EditInvoicePage() {
     setLoading(true);
     try {
       await updateInvoice(values.invoiceNumber, values);
-      router.push("/dashboard//performa-invoice");
+      router.push("/dashboard//performa-invoices");
     } finally {
       setLoading(false);
     }

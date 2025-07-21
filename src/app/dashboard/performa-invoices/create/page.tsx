@@ -1,22 +1,23 @@
 "use client";
 
+// Copy and adapt from quotation create page
 import React, { useState } from "react";
-import QuotationForm, { QuotationFormValues } from "@/components/quotation/QuotationForm";
-import { useQuotationStore } from "@/stores/useQuotationStore";
+import InvoiceForm, { InvoiceFormValues } from "@/components/invoice/InvoiceForm";
 import { useClientStore } from "@/stores/useClientStore";
-import { useRouter } from "next/navigation";
 import { useItemStore } from "@/stores/useItemStore";
+import { useInvoiceStore } from "@/stores/useinvoiceStore";
+import { useRouter } from "next/navigation"
 
-
-const generateQuotationNumber = () => {
+const generateInvoiceNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random
-  return `QTN-${datePart}-${randomPart}`;
+  return `INV-${datePart}-${randomPart}`;
 };
 
-const defaultInitialValues: QuotationFormValues = {
-  quotationTitle: "",
-  quotationNumber: generateQuotationNumber(), // Auto-generate
+const defaultInitialValues: InvoiceFormValues = {
+  type: "performa",
+  invoiceTitle: "",
+  invoiceNumber: generateInvoiceNumber(),
   date: new Date().toISOString().slice(0, 10),
   dueDate: "",
   clientId: "",
@@ -54,28 +55,27 @@ const defaultInitialValues: QuotationFormValues = {
   notes: "",
   attachments: [],
   showSignature: false,
-  phases: [],
 };
 
-export default function CreateQuotationPage() {
+export default function CreateInvoicePage() {
+  const router = useRouter();
   const { clients } = useClientStore();
   const { items } = useItemStore();
-  const createQuotation = useQuotationStore((state) => state.createQuotation);
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const createInvoice = useInvoiceStore((state) => state.createInvoice);
 
-  const handleCreate = async (values: QuotationFormValues) => {
+  const handleCreate = async (values: InvoiceFormValues) => {
     setLoading(true);
     try {
-      await createQuotation(values);
-      router.push("/dashboard/quotation");
+      await createInvoice(values);
+      router.push("/dashboard/performa-invoices");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <QuotationForm
+    <InvoiceForm
       initialValues={defaultInitialValues}
       onSubmit={handleCreate}
       mode="create"

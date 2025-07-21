@@ -1,26 +1,26 @@
 "use client";
 
-// Copy and adapt from quotation create page
 import React, { useState } from "react";
-import InvoiceForm, { InvoiceFormValues } from "@/components/invoice/InvoiceForm";
+import QuotationForm, { QuotationFormValues } from "@/components/quotation/QuotationForm";
+import { useQuotationStore } from "@/stores/useQuotationStore";
 import { useClientStore } from "@/stores/useClientStore";
+import { useRouter } from "next/navigation";
 import { useItemStore } from "@/stores/useItemStore";
-import { useInvoiceStore } from "@/stores/useinvoiceStore";
-import { useRouter } from "next/navigation"
 import { useBussinessStore } from "@/stores/useBussinessStore";
 
-const generateInvoiceNumber = () => {
+
+const generateQuotationNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random
-  return `INV-${datePart}-${randomPart}`;
+  return `QTN-${datePart}-${randomPart}`;
 };
 
-export default function CreateInvoicePage() {
-  const router = useRouter();
+export default function CreateQuotationPage() {
   const { clients } = useClientStore();
   const { items } = useItemStore();
+  const createQuotation = useQuotationStore((state) => state.createQuotation);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const createInvoice = useInvoiceStore((state) => state.createInvoice);
   const { details } = useBussinessStore();
   const businessStoreDetails = details;
 
@@ -36,10 +36,13 @@ export default function CreateInvoicePage() {
     email: "",
   };
 
-  const defaultInitialValues: InvoiceFormValues = {
-    type: "invoice",
-    invoiceTitle: "",
-    invoiceNumber: generateInvoiceNumber(),
+  // Log for debugging
+  console.log("businessStoreDetails", businessStoreDetails);
+  console.log("mappedBusinessDetails", mappedBusinessDetails);
+
+  const defaultInitialValues: QuotationFormValues = {
+    quotationTitle: "",
+    quotationNumber: generateQuotationNumber(), // Auto-generate
     date: new Date().toISOString().slice(0, 10),
     dueDate: "",
     clientId: "",
@@ -78,23 +81,21 @@ export default function CreateInvoicePage() {
     notes: "",
     attachments: [],
     showSignature: false,
+    phases: [],
   };
 
-  console.log(defaultInitialValues)
-
-
-  const handleCreate = async (values: InvoiceFormValues) => {
+  const handleCreate = async (values: QuotationFormValues) => {
     setLoading(true);
     try {
-      await createInvoice(values);
-      router.push("/dashboard/invoices");
+      await createQuotation(values);
+      router.push("/dashboard/quotations");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <InvoiceForm
+    <QuotationForm
       initialValues={defaultInitialValues}
       onSubmit={handleCreate}
       mode="create"
