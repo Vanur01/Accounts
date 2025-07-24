@@ -351,7 +351,7 @@ export default function AddClientModal({ open, onClose, onSubmit, initialValues,
           </div>
           <DialogFooter className="flex justify-end gap-2 mt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" className="btn btn-primary">{mode === 'edit' ? 'Update Client' : 'Add Client'}</Button>
+            <Button type="button" className="btn btn-primary" onClick={handleSubmit}>{mode === 'edit' ? 'Update Client' : 'Add Client'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

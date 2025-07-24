@@ -54,7 +54,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({ clientId, onClientSelect,
           </Select>
         </div>
         {clientId === "new" && (
-          <Button className="btn btn-primary font-semibold px-6 py-2 rounded shadow border border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 transition" onClick={() => setShowAddClient(true)}>
+          <Button type="button" className="btn btn-primary font-semibold px-6 py-2 rounded shadow border border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 transition" onClick={() => setShowAddClient(true)}>
             + Add New Client
           </Button>
         )}

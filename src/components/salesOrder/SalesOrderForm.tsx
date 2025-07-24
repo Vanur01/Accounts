@@ -4,7 +4,7 @@ import ClientSection from "../ClientSection";
 import ItemTable from "../ItemTable";
 import SummaryCard from "../SummaryCard";
 import AdditionalInputs from "../AdditionalInputs";
-import ActionBar from "../ActionBar";
+import ActionBar from "./ActionBar";
 import AddClientModal from "@/components/AddClientModal";
 import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";

@@ -22,15 +22,11 @@ export type Item = {
   igst?: number | string;
   sgst?: number | string;
   cgst?: number | string;
-  // Sales Information
   sellingPrice?: number | string;
-  salesAccount?: string;
   salesDescription?: string;
-  // Purchase Information
   costPrice?: number | string;
-  purchaseAccount?: string;
   purchaseDescription?: string;
-  preferredVendor?: number | Vendor | string;
+  preferredVendor?: string;
 };
 
 interface ItemStore {

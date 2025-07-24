@@ -13,6 +13,7 @@ import { Trash2, XCircle, List, Grid3x3, MoreHorizontal, ChevronDown } from "luc
 import { FileText, FilePlus2, ShoppingCart } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useSearchParams } from "next/navigation";
 
 export default function AllItemsPage() {
   const allItems = useItemStore((state) => state.items);
@@ -21,6 +22,10 @@ export default function AllItemsPage() {
   const addItem = useItemStore((state) => state.addItem);
   const editItem = useItemStore((state) => state.editItem);
   
+  const searchParams = useSearchParams();
+  const subcategoryId = searchParams.get("subcategoryId");
+  const categoryId = searchParams.get("categoryId");
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,21 +34,37 @@ export default function AllItemsPage() {
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'box'>('list');
 
-  // Filter items based on search term and filters
+  // Find the category/subcategory name if filtering by id
+  const filterCategoryName = categoryId
+    ? categories.find(cat => String(cat.id) === String(categoryId))?.name
+    : null;
+  const filterSubcategoryName = subcategoryId
+    ? subcategories.find(sub => String(sub.id) === String(subcategoryId))?.name
+    : null;
+
+  // Filter items based on search term, filters, and query params
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           item.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = filterCategory === "all" || 
-                             (item.category && item.category === filterCategory);
-      
-      const matchesSubcategory = filterSubcategory === "all" || 
-                                (item.subcategoryId && item.subcategoryId.toString() === filterSubcategory);
-      
-      return matchesSearch && matchesCategory && matchesSubcategory;
+        item.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // If subcategoryId is present, filter by subcategory name
+      if (filterSubcategoryName) {
+        if (item.subcategory !== filterSubcategoryName) return false;
+      } else if (filterCategoryName) {
+        // If categoryId is present, filter by category name
+        if (item.category !== filterCategoryName) return false;
+      } else {
+        // Otherwise, use UI filters
+        const matchesCategory = filterCategory === "all" || 
+          (item.category && item.category === filterCategory);
+        const matchesSubcategory = filterSubcategory === "all" || 
+          (item.subcategory && item.subcategory === filterSubcategory);
+        if (!matchesCategory || !matchesSubcategory) return false;
+      }
+      return matchesSearch;
     });
-  }, [allItems, searchTerm, filterCategory, filterSubcategory]);
+  }, [allItems, searchTerm, filterCategory, filterSubcategory, filterCategoryName, filterSubcategoryName]);
 
   // Handle select all
   const allSelected = filteredItems.length > 0 && filteredItems.every(item => selectedItems.includes(item.id));
@@ -68,18 +89,19 @@ export default function AllItemsPage() {
     alert(`Delete items: ${selectedItems.join(", ")}`);
   };
 
+  // Bulk Invoice handler
+  const handleBulkInvoice = () => {
+    const itemsToInvoice = allItems.filter(item => selectedItems.includes(item.id));
+    if (itemsToInvoice.length === 0) {
+      alert("Please select at least one item to create an invoice.");
+      return;
+    }
+    localStorage.setItem("bulkInvoiceItems", JSON.stringify(itemsToInvoice));
+    window.location.href = "/dashboard/invoices/create";
+  };
+
   const handleClearSelection = () => {
     setSelectedItems([]);
-  };
-
-  const handleAddItem = (item: { name: string; description: string; price: number; type: string; category?: string; hsn?: string; unit?: string; igst?: number; sgst?: number; cgst?: number }) => {
-    addItem(item);
-  };
-
-  const handleEditItem = (item: { name: string; description: string; price: number; type: string; category?: string; hsn?: string; unit?: string; igst?: number; sgst?: number; cgst?: number }) => {
-    if (editId !== null) {
-      editItem(editId, item);
-    }
   };
 
   const openEditModal = (id: number) => {
@@ -95,20 +117,25 @@ export default function AllItemsPage() {
   const editingItem = editId !== null ? allItems.find((item) => item.id === editId) : null;
 
   // Get category and subcategory names for display
-  const getCategoryName = (categoryId?: number) => {
-    if (!categoryId) return "Uncategorized";
-    const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : "Unknown Category";
-  };
-
-  const getSubcategoryName = (subcategoryId?: number) => {
-    if (!subcategoryId) return "No Subcategory";
-    const subcategory = subcategories.find(sub => sub.id === subcategoryId);
+  const getSubcategoryName = (subcategoryName?: string) => {
+    if (!subcategoryName) return "No Subcategory";
+    const subcategory = subcategories.find(sub => sub.name === subcategoryName);
     return subcategory ? subcategory.name : "Unknown Subcategory";
   };
 
   return (
     <div className="max-w-[98vw] w-full mx-auto rounded-md shadow-sm p-4 sm:p-6 md:p-8" style={{ background: 'var(--color-card)', color: 'var(--color-card-foreground)' }}>
+      {/* Show filter context if present */}
+      {(filterCategoryName || filterSubcategoryName) && (
+        <div className="mb-2 text-xs text-muted-foreground">
+          {filterCategoryName && !filterSubcategoryName && (
+            <>Filtering by Category: <span className="font-semibold">{filterCategoryName}</span></>
+          )}
+          {filterSubcategoryName && (
+            <>Filtering by Subcategory: <span className="font-semibold">{filterSubcategoryName}</span></>
+          )}
+        </div>
+      )}
       
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -134,13 +161,12 @@ export default function AllItemsPage() {
               <Grid3x3 size={18} />
             </button>
           </div>
-          <Link href="/dashboard/inventory/items/create" passHref legacyBehavior>
-            <a
-              style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-              className="px-4 py-2 rounded font-medium text-sm hover:opacity-90 transition border border-[var(--color-primary)] shadow-sm"
-            >
-              + Add Item
-            </a>
+          <Link
+            href="/dashboard/inventory/items/create"
+            style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+            className="px-4 py-2 rounded font-medium text-sm hover:opacity-90 transition border border-[var(--color-primary)] shadow-sm"
+          >
+            + Add Item
           </Link>
           {selectedItems.length > 0 && (
             <DropdownMenu>
@@ -150,7 +176,7 @@ export default function AllItemsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40 p-1 text-sm">
-                 <DropdownMenuItem className="flex items-center gap-2" onClick={() => alert('Invoice action for: ' + selectedItems.join(', '))}>
+                 <DropdownMenuItem className="flex items-center gap-2" onClick={handleBulkInvoice}>
                    <FileText size={16} /> Invoice
                  </DropdownMenuItem>
                  <DropdownMenuItem className="flex items-center gap-2" onClick={() => alert('Sales Order action for: ' + selectedItems.join(', '))}>
@@ -206,7 +232,7 @@ export default function AllItemsPage() {
             >
               <option value="all">All Subcategories</option>
               {subcategories.map((subcategory) => (
-                <option key={subcategory.id} value={subcategory.id.toString()}>
+                <option key={subcategory.id} value={subcategory.name}>
                   {subcategory.name}
                 </option>
               ))}
@@ -268,11 +294,11 @@ export default function AllItemsPage() {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
                     <span className="px-2 py-1 text-xs rounded-full" style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}>
-                      {getSubcategoryName(item.subcategoryId)}
+                      {getSubcategoryName(item.subcategory)}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap align-middle text-sm">{item.type}</td>
-                  <td className="px-4 py-3 whitespace-nowrap font-semibold align-middle text-sm">₹{item.price.toLocaleString()}</td>
+                  <td className="px-4 py-3 whitespace-nowrap font-semibold align-middle text-sm">₹{item.sellingPrice ? Number(item.sellingPrice).toLocaleString() : '-'}</td>
                   <td className="px-4 py-3 whitespace-nowrap align-middle text-xs">{item.hsn || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap align-middle text-xs">{item.unit || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
@@ -286,12 +312,12 @@ export default function AllItemsPage() {
                         </button>
                       </PopoverTrigger>
                       <PopoverContent align="end" className="w-32 p-1">
-                        <button
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-muted)] rounded transition"
-                          onClick={() => openEditModal(item.id)}
+                        <Link
+                          href={`/dashboard/inventory/items/edit/${item.id}`}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-muted)] rounded transition block"
                         >
                           Edit
-                        </button>
+                        </Link>
                         {/* Add more actions here if needed */}
                       </PopoverContent>
                     </Popover>
@@ -339,12 +365,12 @@ export default function AllItemsPage() {
                     </button>
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-32 p-1">
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-muted)] rounded transition"
-                      onClick={() => openEditModal(item.id)}
+                    <Link
+                      href={`/dashboard/inventory/items/edit/${item.id}`}
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--color-muted)] rounded transition block"
                     >
                       Edit
-                    </button>
+                    </Link>
                     {/* Add more actions here if needed */}
                   </PopoverContent>
                 </Popover>
@@ -355,11 +381,11 @@ export default function AllItemsPage() {
                 <div className="text-sm text-[var(--color-muted-foreground)] mb-2 truncate">{item.description}</div>
                 <div className="flex flex-wrap gap-2 mb-2">
                   <span className="px-2 py-1 text-xs rounded-full bg-[var(--color-muted)] text-[var(--color-muted-foreground)]">{item.category || "Uncategorized"}</span>
-                  <span className="px-2 py-1 text-xs rounded-full bg-[var(--color-muted)] text-[var(--color-muted-foreground)]">{getSubcategoryName(item.subcategoryId)}</span>
+                  <span className="px-2 py-1 text-xs rounded-full bg-[var(--color-muted)] text-[var(--color-muted-foreground)]">{getSubcategoryName(item.subcategory)}</span>
                   <span className="px-2 py-1 text-xs rounded-full bg-[var(--color-muted)] text-[var(--color-muted-foreground)]">{item.type}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm mb-2">
-                  <span className="font-semibold">₹{item.price.toLocaleString()}</span>
+                  <span className="font-semibold">₹{item.sellingPrice ? Number(item.sellingPrice).toLocaleString() : '-'}</span>
                   <span className="text-xs">HSN: {item.hsn || "-"}</span>
                   <span className="text-xs">Unit: {item.unit || "-"}</span>
                 </div>
@@ -368,25 +394,6 @@ export default function AllItemsPage() {
           ))}
         </div>
       )}
-
-      <AddItemModal
-        open={modalOpen}
-        onClose={closeModal}
-        onSubmit={editId === null ? handleAddItem : handleEditItem}
-        initialValues={editingItem ? {
-          name: editingItem.name,
-          description: editingItem.description,
-          price: editingItem.price,
-          type: editingItem.type,
-          category: editingItem.category,
-          hsn: editingItem.hsn,
-          unit: editingItem.unit,
-          igst: editingItem.igst,
-          sgst: editingItem.sgst,
-          cgst: editingItem.cgst,
-        } : undefined}
-        submitLabel={editId === null ? "Add Item" : "Update Item"}
-      />
     </div>
   );
 }
