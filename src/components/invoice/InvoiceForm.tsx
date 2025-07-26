@@ -7,9 +7,11 @@ import ActionBar from "./ActionBar";
 import AddClientModal from "@/components/AddClientModal";
 import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";
+import PhaseWisePayment, { PaymentPhase } from "@/components/PhaseWisePayment";
 import type { Cess } from "@/components/ConfigureTax";
 import InvoiceHeaderBar from "./HeaderBar";
 import YourDetailsSection from "@/components/BussinessDetailsSection";
+import { useClientStore } from "@/stores/useClientStore";
 // InvoiceHeaderBar will be created next
 
 export type InvoiceFormValues = {
@@ -46,6 +48,7 @@ export type InvoiceFormValues = {
   attachments: File[];
   showSignature: boolean;
   cessList: Cess[];
+  phases: PaymentPhase[];
 };
 
 type InvoiceFormProps = {
@@ -59,8 +62,10 @@ type InvoiceFormProps = {
 };
 
 const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients, mockProducts, onSuccess, loading }) => {
-  const clients = mockClients || [];
+  const mockClientsFromProps = mockClients || [];
   const products = mockProducts || [];
+  const addClient = useClientStore((state) => state.addClient);
+  const clients = useClientStore((state) => state.clients);
   const [invoiceTitle, setInvoiceTitle] = useState(initialValues.invoiceTitle);
   const [invoiceNumber] = useState(initialValues.invoiceNumber);
   const [date, setDate] = useState(initialValues.date);
@@ -81,6 +86,7 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
   const [attachments, setAttachments] = useState<File[]>(initialValues.attachments);
   const [showSignature, setShowSignature] = useState(initialValues.showSignature);
   const [cessList, setCessList] = useState<Cess[]>(initialValues.cessList || []);
+  const [phases, setPhases] = useState<PaymentPhase[]>(initialValues.phases || []);
   const [type] = useState(initialValues.type);
 
   // Use businessDetails from initialValues
@@ -193,6 +199,7 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
       attachments,
       showSignature,
       cessList,
+      phases,
     });
     if (onSuccess) onSuccess();
   };
@@ -252,6 +259,7 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
         mockProducts={products}
       />
       {errors.items && <div className="text-red-500 text-xs mb-2">{errors.items}</div>}
+      <PhaseWisePayment phases={phases} setPhases={setPhases} totalAmount={total} />
       <SummaryCard
         subtotal={subtotal}
         discountType={discountType}
@@ -277,13 +285,24 @@ const InvoiceForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients
       />
       <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
       <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} onSubmit={form => {
+        // Add client to the store and get the new client back
+        const newClient = addClient({
+          name: form.businessName,
+          gstin: form.gstin,
+          address: form.street,
+          contact: form.alias || form.businessName,
+          email: form.email,
+        });
+        
+        // Update local state with the new client
         setClientDetails({
           name: form.businessName,
           gstin: form.gstin,
           address: form.street,
-          contact: form.phone,
+          contact: form.alias || form.businessName,
           email: form.email,
         });
+        setClientId(String(newClient.id));
         setShowAddClient(false);
       }} />
       <AddItemModal open={showAddItemModal} onClose={() => setShowAddItemModal(false)} onSubmit={item => {

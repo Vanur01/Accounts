@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FaChevronDown } from "react-icons/fa";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FaChevronDown, FaPlus, FaTimes, FaBuilding, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope, FaUniversity } from "react-icons/fa";
 
 const INDUSTRIES = [
   "Manufacturing",
@@ -10,16 +14,25 @@ const INDUSTRIES = [
   "Healthcare",
   "Education",
   "Finance",
+  "Construction",
+  "Consulting",
+  "Food & Beverage",
+  "Transportation",
+  "Real Estate",
+  "Media & Entertainment",
   "Other",
 ];
-const COUNTRIES = ["India", "USA", "UK", "Other"];
+const COUNTRIES = ["India", "USA", "UK", "Canada", "Australia", "Other"];
 const STATES = [
-  "Andhra Pradesh", "Delhi", "Gujarat", "Karnataka", "Maharashtra", "Tamil Nadu", "West Bengal", "Other"
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Delhi", "Goa", "Gujarat", 
+  "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", 
+  "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", 
+  "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Other"
 ];
 const GST_TYPES = ["Regular", "Composition", "Unregistered", "Consumer"];
 const TAX_TREATMENTS = ["Registered Business", "Unregistered Business", "Consumer", "Overseas"];
 const VENDOR_TYPES = ["Individual", "Company"];
-const ACCOUNT_TYPES = ["Savings", "Current", "Other"];
+const ACCOUNT_TYPES = ["Savings", "Current", "Fixed Deposit", "Overdraft", "Other"];
 
 export type VendorFormValues = {
   name: string;
@@ -42,8 +55,9 @@ export type VendorFormValues = {
   phone?: string;
   showPhone?: boolean;
   address?: string;
-  customFields?: { label: string; value: string }[];
+  customFields?: { id: string; label: string; value: string }[];
   bankAccounts?: {
+    id: string;
     bankName: string;
     accountNumber: string;
     ifsc: string;
@@ -61,505 +75,771 @@ type VendorFormProps = {
   onCancel?: () => void;
 };
 
+// Collapsible Section Component - Moved outside to prevent re-renders
+const CollapsibleSection = React.memo(({
+  title,
+  sectionKey,
+  children,
+  isOpen,
+  onToggle,
+  icon
+}: {
+  title: string;
+  sectionKey: string;
+  children: React.ReactNode;
+  isOpen: boolean;
+  onToggle: (key: string) => void;
+  icon?: React.ReactNode;
+}) => (
+  <Card className="overflow-hidden">
+    <button
+      type="button"
+      className="flex items-center w-full justify-between py-4 px-6 text-left font-semibold text-lg bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+      onClick={() => onToggle(sectionKey)}
+      aria-expanded={isOpen}
+    >
+      <div className="flex items-center gap-3">
+        {icon && <span className="text-blue-600">{icon}</span>}
+        <span className="text-gray-800">{title}</span>
+      </div>
+      <FaChevronDown
+        className={`text-gray-500 transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"}`}
+      />
+    </button>
+    <div
+      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+        isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+      }`}
+    >
+      <CardContent className="border-t border-gray-100">
+        {children}
+      </CardContent>
+    </div>
+  </Card>
+));
+
+CollapsibleSection.displayName = 'CollapsibleSection';
+
+// Form Input Component - Moved outside to prevent re-renders
+const FormInput = React.memo(({ 
+  label, 
+  name, 
+  type = "text", 
+  placeholder, 
+  required = false, 
+  className = "",
+  value,
+  onChange,
+  error,
+  touched,
+  ...props 
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+  touched?: boolean;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'name' | 'type' | 'value' | 'onChange'>) => (
+  <div className="space-y-2">
+    <Label htmlFor={name} className="text-gray-700">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </Label>
+    <Input
+      id={name}
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={`${error && touched ? 'border-red-500 focus:border-red-500' : ''} ${className}`}
+      {...props}
+    />
+    {error && touched && (
+      <div className="text-xs text-red-600 flex items-center gap-1">
+        <span>⚠</span>
+        {error}
+      </div>
+    )}
+  </div>
+));
+
+FormInput.displayName = 'FormInput';
+
+// Form Select Component - Moved outside to prevent re-renders
+const FormSelect = React.memo(({ 
+  label, 
+  name, 
+  options, 
+  placeholder = "Select an option",
+  required = false,
+  className = "",
+  value,
+  onChange,
+  error,
+  touched
+}: {
+  label: string;
+  name: string;
+  options: string[];
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  touched?: boolean;
+}) => (
+  <div className="space-y-2">
+    <Label htmlFor={name} className="text-gray-700">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </Label>
+    <Select name={name} value={value} onValueChange={onChange}>
+      <SelectTrigger className={`${error && touched ? 'border-red-500 focus:border-red-500' : ''} ${className}`}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option} value={option}>
+            {option}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    {error && touched && (
+      <div className="text-xs text-red-600 flex items-center gap-1">
+        <span>⚠</span>
+        {error}
+      </div>
+    )}
+  </div>
+));
+
+FormSelect.displayName = 'FormSelect';
+
 export default function VendorForm({ initialValues, onSubmit, submitLabel, loading, onCancel }: VendorFormProps) {
   const [form, setForm] = useState<VendorFormValues>({ ...initialValues });
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
-  const [openSections, setOpenSections] = useState<{ [k: string]: boolean }>({});
+  const [openSections, setOpenSections] = useState<{ [k: string]: boolean }>({
+    tax: false,
+    address: false,
+    details: false,
+    attachments: false,
+    bank: false
+  });
+  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    setForm({ ...initialValues });
+    // Only update form if it hasn't been initialized or if it's a genuine change to initialValues
+    if (!isInitialized.current) {
+      setForm({ ...initialValues });
+      isInitialized.current = true;
+    }
   }, [initialValues]);
 
-  const toggleSection = (key: string) => {
+  const toggleSection = useCallback((key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // Helper for animated section
-  const Section = ({
-    title,
-    sectionKey,
-    children,
-  }: {
-    title: string;
-    sectionKey: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="pt-6">
-      <button
-        type="button"
-        className="flex items-center w-full justify-between py-3 px-2 text-left font-semibold text-lg rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 hover:bg-gray-50"
-        onClick={() => toggleSection(sectionKey)}
-        aria-expanded={!!openSections[sectionKey]}
-      >
-        <span>{title}</span>
-        <FaChevronDown
-          className={`ml-2 text-base transition-transform duration-300 ${openSections[sectionKey] ? "rotate-180" : "rotate-0"}`}
-        />
-      </button>
-      <div
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${openSections[sectionKey] ? "max-h-[1000px] mt-3" : "max-h-0"}`}
-      >
-        <div className={`rounded-xl bg-white shadow-sm px-4 py-6 ${openSections[sectionKey] ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}>{children}</div>
-      </div>
-    </div>
-  );
+  }, []);
 
   // Handlers
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    if (type === "checkbox" && e.target instanceof HTMLInputElement) {
-      setForm({
-        ...form,
-        [name]: e.target.checked,
-      });
+    
+    setTouched(prev => ({ ...prev, [name]: true }));
+    
+    if (type === "checkbox") {
+      const target = e.target as HTMLInputElement;
+      setForm(prev => ({
+        ...prev,
+        [name]: target.checked,
+      }));
     } else {
-      setForm({
-        ...form,
+      setForm(prev => ({
+        ...prev,
         [name]: value,
-      });
+      }));
     }
-  };
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  }, [errors]);
+
+  // Handler for shadcn Select components
+  const handleSelectChange = useCallback((name: string) => (value: string) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    setForm(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  }, [errors]);
 
   // Custom Fields
-  const addCustomField = () => {
-    setForm({
-      ...form,
-      customFields: [...(form.customFields || []), { label: "", value: "" }],
+  const addCustomField = useCallback(() => {
+    setForm(prev => ({
+      ...prev,
+      customFields: [...(prev.customFields || []), { 
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9), 
+        label: "", 
+        value: "" 
+      }],
+    }));
+  }, []);
+
+  const updateCustomField = useCallback((id: string, key: "label" | "value", value: string) => {
+    setForm(prev => {
+      const updated = [...(prev.customFields || [])];
+      const index = updated.findIndex(cf => cf.id === id);
+      if (index !== -1) {
+        updated[index] = { ...updated[index], [key]: value };
+      }
+      return { ...prev, customFields: updated };
     });
-  };
-  const updateCustomField = (idx: number, key: "label" | "value", value: string) => {
-    const updated = [...(form.customFields || [])];
-    updated[idx][key] = value;
-    setForm({ ...form, customFields: updated });
-  };
-  const removeCustomField = (idx: number) => {
-    const updated = [...(form.customFields || [])];
-    updated.splice(idx, 1);
-    setForm({ ...form, customFields: updated });
-  };
+  }, []);
+
+  const removeCustomField = useCallback((id: string) => {
+    setForm(prev => ({
+      ...prev,
+      customFields: (prev.customFields || []).filter(cf => cf.id !== id)
+    }));
+  }, []);
 
   // Bank Accounts
-  const addBankAccount = () => {
-    setForm({
-      ...form,
+  const addBankAccount = useCallback(() => {
+    setForm(prev => ({
+      ...prev,
       bankAccounts: [
-        ...(form.bankAccounts || []),
-        { bankName: "", accountNumber: "", ifsc: "", branch: "", accountType: "" },
+        ...(prev.bankAccounts || []),
+        { 
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9), 
+          bankName: "", 
+          accountNumber: "", 
+          ifsc: "", 
+          branch: "", 
+          accountType: "" 
+        },
       ],
+    }));
+  }, []);
+
+  const updateBankAccount = useCallback(<K extends keyof Omit<NonNullable<VendorFormValues['bankAccounts']>[number], 'id'>>(
+    id: string, 
+    key: K, 
+    value: Omit<NonNullable<VendorFormValues['bankAccounts']>[number], 'id'>[K]
+  ) => {
+    setForm(prev => {
+      const updated = [...(prev.bankAccounts || [])];
+      const index = updated.findIndex(ba => ba.id === id);
+      if (index !== -1) {
+        updated[index] = { ...updated[index], [key]: value };
+      }
+      return { ...prev, bankAccounts: updated };
     });
-  };
-  const updateBankAccount = <K extends keyof (NonNullable<typeof form.bankAccounts>[number])>(idx: number, key: K, value: NonNullable<typeof form.bankAccounts>[number][K]) => {
-    const updated = [...(form.bankAccounts || [])];
-    updated[idx] = { ...updated[idx], [key]: value };
-    setForm({ ...form, bankAccounts: updated });
-  };
-  const removeBankAccount = (idx: number) => {
-    const updated = [...(form.bankAccounts || [])];
-    updated.splice(idx, 1);
-    setForm({ ...form, bankAccounts: updated });
-  };
+  }, []);
+
+  const removeBankAccount = useCallback((id: string) => {
+    setForm(prev => ({
+      ...prev,
+      bankAccounts: (prev.bankAccounts || []).filter(ba => ba.id !== id)
+    }));
+  }, []);
 
   // Validation
-  const validate = () => {
+  const validate = useCallback(() => {
     const errs: { [k: string]: string } = {};
-    if (!form.name) errs.name = "Business Name is required";
-    if (!form.country) errs.country = "Country is required";
-    if (!form.city) errs.city = "City/Town is required";
+    if (!form.name?.trim()) errs.name = "Business Name is required";
+    if (!form.country?.trim()) errs.country = "Country is required";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errs.email = "Please enter a valid email address";
+    }
+    if (form.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstin)) {
+      errs.gstin = "Please enter a valid GSTIN format";
+    }
+    if (form.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.panNumber)) {
+      errs.panNumber = "Please enter a valid PAN format";
+    }
+    if (form.postalCode && !/^\d{6}$/.test(form.postalCode)) {
+      errs.postalCode = "Please enter a valid 6-digit postal code";
+    }
     return errs;
-  };
+  }, [form]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length === 0) {
       onSubmit(form);
+    } else {
+      // Auto open sections with errors
+      Object.keys(errs).forEach(field => {
+        if (['gstin', 'panNumber', 'gstType', 'taxTreatment'].includes(field)) {
+          setOpenSections(prev => ({ ...prev, tax: true }));
+        } else if (['country', 'state', 'city', 'postalCode', 'streetAddress', 'address'].includes(field)) {
+          setOpenSections(prev => ({ ...prev, address: true }));
+        } else if (['email', 'phone', 'contact', 'uniqueKey'].includes(field)) {
+          setOpenSections(prev => ({ ...prev, details: true }));
+        }
+      });
     }
-  };
+  }, [form, validate, onSubmit]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Basic Info (always visible) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-6">
-        <div>
-          <label className="block text-sm font-semibold mb-2">Business Name <span className="text-destructive">*</span></label>
-          <Input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            placeholder="Business Name"
-            className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-          />
-          {errors.name && <div className="text-xs mt-1 text-destructive">{errors.name}</div>}
-        </div>
-        <div>
-          <label className="block text-sm font-semibold mb-2">Display Name</label>
-          <Input
-            type="text"
-            name="displayName"
-            value={form.displayName}
-            onChange={handleChange}
-            placeholder="Display Name"
-            className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-semibold mb-2">Industry</label>
-          <select
-            name="industry"
-            value={form.industry}
-            onChange={handleChange}
-            className="h-11 w-full text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-          >
-            <option value="">-Select an Industry-</option>
-            {INDUSTRIES.map((ind) => (
-              <option key={ind} value={ind}>{ind}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold mb-2">Vendor Type</label>
-          <select
-            name="vendorType"
-            value={form.vendorType}
-            onChange={handleChange}
-            className="h-11 w-full text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-          >
-            {VENDOR_TYPES.map((type) => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="border-b border-gray-200" />
+    <div className="max-w-6xl mx-auto p-6 min-h-screen">
 
-      {/* Tax Information Section */}
-      <Section title="Tax Information (optional)" sectionKey="tax">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Business GSTIN</label>
-            <Input
-              type="text"
-              name="gstin"
-              value={form.gstin}
-              onChange={handleChange}
-              placeholder="Business GSTIN (Optional)"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">GST Type</label>
-            <select
-              name="gstType"
-              value={form.gstType}
-              onChange={handleChange}
-              className="h-11 w-full text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            >
-              <option value="">Check GST Type</option>
-              {GST_TYPES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Business PAN Number</label>
-            <Input
-              type="text"
-              name="panNumber"
-              value={form.panNumber}
-              onChange={handleChange}
-              placeholder="Business PAN Number (Optional)"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Tax Treatment</label>
-            <select
-              name="taxTreatment"
-              value={form.taxTreatment}
-              onChange={handleChange}
-              className="h-11 w-full text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            >
-              <option value="">Select Tax Treatment</option>
-              {TAX_TREATMENTS.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </Section>
-
-      {/* Address Section */}
-      <Section title="Address (optional)" sectionKey="address">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Country</label>
-            <select
-              name="country"
-              value={form.country}
-              onChange={handleChange}
-              className="h-11 w-full text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            >
-              {COUNTRIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            {errors.country && <div className="text-xs mt-1 text-destructive">{errors.country}</div>}
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">State / Province</label>
-            <select
-              name="state"
-              value={form.state}
-              onChange={handleChange}
-              className="h-11 w-full text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            >
-              <option value="">Select State / Province</option>
-              {STATES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">City/Town</label>
-            <Input
-              type="text"
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-              placeholder="City/Town Name"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-            {errors.city && <div className="text-xs mt-1 text-destructive">{errors.city}</div>}
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Postal Code / Zip Code</label>
-            <Input
-              type="text"
-              name="postalCode"
-              value={form.postalCode}
-              onChange={handleChange}
-              placeholder="Postal Code / Zip Code"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold mb-2">Street Address</label>
-            <Input
-              type="text"
-              name="streetAddress"
-              value={form.streetAddress}
-              onChange={handleChange}
-              placeholder="Street Address"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold mb-2">Address</label>
-            <Input
-              type="text"
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="Full Address"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-          </div>
-        </div>
-      </Section>
-
-      {/* Additional Details Section */}
-      <Section title="Additional Details (optional)" sectionKey="details">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Unique Key</label>
-            <Input
-              type="text"
-              name="uniqueKey"
-              value={form.uniqueKey}
-              onChange={handleChange}
-              readOnly
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Email</label>
-            <Input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Email"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-            <label className="inline-flex items-center mt-2 ml-2 text-sm">
-              <input
-                type="checkbox"
-                name="showEmail"
-                checked={form.showEmail}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Basic Info (always visible) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <FaBuilding className="text-blue-600 text-xl" />
+                Basic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                label="Business Name"
+                name="name"
+                placeholder="Enter business name"
+                required
+                value={form.name || ""}
                 onChange={handleChange}
-                className="mr-1 accent-primary"
+                error={errors.name}
+                touched={touched.name}
               />
-              Show Email in Invoice
-            </label>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Phone No.</label>
-            <Input
-              type="text"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="+91"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-            <label className="inline-flex items-center mt-2 ml-2 text-sm">
-              <input
-                type="checkbox"
-                name="showPhone"
-                checked={form.showPhone}
+              <FormInput
+                label="Display Name"
+                name="displayName"
+                placeholder="Display name for invoices"
+                value={form.displayName || ""}
                 onChange={handleChange}
-                className="mr-1 accent-primary"
+                error={errors.displayName}
+                touched={touched.displayName}
               />
-              Show Phone in Invoice
-            </label>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Contact</label>
-            <Input
-              type="text"
-              name="contact"
-              value={form.contact}
-              onChange={handleChange}
-              placeholder="Contact Person"
-              className="h-11 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-            />
-          </div>
-          {/* Custom Fields */}
-          <div className="md:col-span-2 mt-2">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-semibold">Custom Fields</span>
-              <Button type="button" variant="outline" size="sm" onClick={addCustomField} className="rounded-full px-3 py-1 text-sm">Add Custom Field</Button>
+              <FormSelect
+                label="Industry"
+                name="industry"
+                options={INDUSTRIES}
+                placeholder="Select industry"
+                value={form.industry || ""}
+                onChange={handleSelectChange("industry")}
+                error={errors.industry}
+                touched={touched.industry}
+              />
+              <FormSelect
+                label="Vendor Type"
+                name="vendorType"
+                options={VENDOR_TYPES}
+                placeholder="Select vendor type"
+                value={form.vendorType || ""}
+                onChange={handleSelectChange("vendorType")}
+                error={errors.vendorType}
+                touched={touched.vendorType}
+              />
             </div>
-            {form.customFields && form.customFields.length > 0 && (
-              <div className="space-y-2">
-                {form.customFields.map((cf, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <Input
-                      type="text"
-                      placeholder="Label"
-                      value={cf.label}
-                      onChange={e => updateCustomField(idx, "label", e.target.value)}
-                      className="w-1/3 h-10 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-                    />
-                    <Input
-                      type="text"
-                      placeholder="Value"
-                      value={cf.value}
-                      onChange={e => updateCustomField(idx, "value", e.target.value)}
-                      className="w-1/2 h-10 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-                    />
-                    <Button type="button" variant="destructive" size="sm" onClick={() => removeCustomField(idx)} className="rounded-full px-3 py-1 text-sm">Remove</Button>
-                  </div>
-                ))}
+            </CardContent>
+          </Card>
+
+          {/* Tax Information Section */}
+          <CollapsibleSection
+            title="Tax Information"
+            sectionKey="tax"
+            isOpen={openSections.tax}
+            onToggle={toggleSection}
+            icon={<FaBuilding />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                label="Business GSTIN"
+                name="gstin"
+                placeholder="22AAAAA0000A1Z5"
+                value={form.gstin || ""}
+                onChange={handleChange}
+                error={errors.gstin}
+                touched={touched.gstin}
+              />
+              <FormSelect
+                label="GST Type"
+                name="gstType"
+                options={GST_TYPES}
+                placeholder="Select GST type"
+                value={form.gstType || ""}
+                onChange={handleSelectChange("gstType")}
+                error={errors.gstType}
+                touched={touched.gstType}
+              />
+              <FormInput
+                label="Business PAN Number"
+                name="panNumber"
+                placeholder="ABCDE1234F"
+                value={form.panNumber || ""}
+                onChange={handleChange}
+                error={errors.panNumber}
+                touched={touched.panNumber}
+              />
+              <FormSelect
+                label="Tax Treatment"
+                name="taxTreatment"
+                options={TAX_TREATMENTS}
+                placeholder="Select tax treatment"
+                value={form.taxTreatment || ""}
+                onChange={handleSelectChange("taxTreatment")}
+                error={errors.taxTreatment}
+                touched={touched.taxTreatment}
+              />
+            </div>
+          </CollapsibleSection>
+
+          {/* Address Section */}
+          <CollapsibleSection
+            title="Address Information"
+            sectionKey="address"
+            isOpen={openSections.address}
+            onToggle={toggleSection}
+            icon={<FaMapMarkerAlt />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormSelect
+                label="Country"
+                name="country"
+                options={COUNTRIES}
+                placeholder="Select country"
+                required
+                value={form.country || ""}
+                onChange={handleSelectChange("country")}
+                error={errors.country}
+                touched={touched.country}
+              />
+              <FormSelect
+                label="State / Province"
+                name="state"
+                options={STATES}
+                placeholder="Select state"
+                value={form.state || ""}
+                onChange={handleSelectChange("state")}
+                error={errors.state}
+                touched={touched.state}
+              />
+              <FormInput
+                label="City/Town"
+                name="city"
+                placeholder="Enter city name"
+                required
+                value={form.city || ""}
+                onChange={handleChange}
+                error={errors.city}
+                touched={touched.city}
+              />
+              <FormInput
+                label="Postal Code"
+                name="postalCode"
+                placeholder="110001"
+                value={form.postalCode || ""}
+                onChange={handleChange}
+                error={errors.postalCode}
+                touched={touched.postalCode}
+              />
+              <div className="md:col-span-2">
+                <FormInput
+                  label="Street Address"
+                  name="streetAddress"
+                  placeholder="Enter street address"
+                  value={form.streetAddress || ""}
+                  onChange={handleChange}
+                  error={errors.streetAddress}
+                  touched={touched.streetAddress}
+                />
               </div>
-            )}
-          </div>
-        </div>
-      </Section>
-
-      {/* Attachments Section */}
-      <Section title="Attachments (optional)" sectionKey="attachments">
-        <div className="mt-2 text-sm text-gray-500">Attachment upload coming soon.</div>
-      </Section>
-
-      {/* Bank Accounting Details Section */}
-      <Section title="Bank Accounting Details (optional)" sectionKey="bank">
-        <div className="mt-2">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold">Accounts</span>
-            <Button type="button" variant="outline" size="sm" onClick={addBankAccount} className="rounded-full px-3 py-1 text-sm">Add Bank Account</Button>
-          </div>
-          {form.bankAccounts && form.bankAccounts.length > 0 && (
-            <div className="space-y-4">
-              {form.bankAccounts.map((ba, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end border rounded-lg p-3 bg-white shadow-sm">
-                  <Input
-                    type="text"
-                    placeholder="Bank Name"
-                    value={ba.bankName}
-                    onChange={e => updateBankAccount(idx, "bankName", e.target.value)}
-                    className="h-10 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Account Number"
-                    value={ba.accountNumber}
-                    onChange={e => updateBankAccount(idx, "accountNumber", e.target.value)}
-                    className="h-10 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="IFSC Code"
-                    value={ba.ifsc}
-                    onChange={e => updateBankAccount(idx, "ifsc", e.target.value)}
-                    className="h-10 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Branch"
-                    value={ba.branch || ""}
-                    onChange={e => updateBankAccount(idx, "branch", e.target.value)}
-                    className="h-10 text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-                  />
-                  <select
-                    value={ba.accountType || ""}
-                    onChange={e => updateBankAccount(idx, "accountType", e.target.value)}
-                    className="h-10 w-full text-base px-3 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg shadow-sm"
-                  >
-                    <option value="">Account Type</option>
-                    {ACCOUNT_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeBankAccount(idx)} className="rounded-full px-3 py-1 text-sm">Remove</Button>
-                </div>
-              ))}
+              <div className="md:col-span-2">
+                <FormInput
+                  label="Complete Address"
+                  name="address"
+                  placeholder="Full address for correspondence"
+                  value={form.address || ""}
+                  onChange={handleChange}
+                  error={errors.address}
+                  touched={touched.address}
+                />
+              </div>
             </div>
-          )}
-        </div>
-      </Section>
+          </CollapsibleSection>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 mt-8">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            className="rounded-lg px-6 py-2 text-base font-semibold border-gray-300 hover:bg-gray-100 shadow-sm"
-            disabled={loading}
+          {/* Additional Details Section */}
+          <CollapsibleSection
+            title="Contact & Additional Details"
+            sectionKey="details"
+            isOpen={openSections.details}
+            onToggle={toggleSection}
+            icon={<FaUser />}
           >
-            Cancel
-          </Button>
-        )}
-        <Button
-          type="submit"
-          className="rounded-lg px-6 py-2 text-base font-semibold border border-[var(--color-primary)] hover:opacity-90 transition shadow-sm flex items-center gap-2"
-          style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-          disabled={loading}
-        >
-          {loading && (
-            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-          )}
-          {submitLabel}
-        </Button>
-      </div>
-    </form>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                label="Unique Key"
+                name="uniqueKey"
+                placeholder="Auto-generated"
+                readOnly
+                className="bg-gray-50"
+                value={form.uniqueKey || ""}
+                onChange={handleChange}
+                error={errors.uniqueKey}
+                touched={touched.uniqueKey}
+              />
+              <div className="space-y-2">
+                <FormInput
+                  label="Email Address"
+                  name="email"
+                  type="email"
+                  placeholder="vendor@example.com"
+                  value={form.email || ""}
+                  onChange={handleChange}
+                  error={errors.email}
+                  touched={touched.email}
+                />
+                <label className="inline-flex items-center mt-2 text-sm text-gray-600">
+                  <Checkbox
+                    name="showEmail"
+                    checked={!!form.showEmail}
+                    onCheckedChange={(checked) => {
+                      setForm(prev => ({ ...prev, showEmail: !!checked }));
+                    }}
+                    className="mr-2"
+                  />
+                  Show email on invoices
+                </label>
+              </div>
+              <div className="space-y-2">
+                <FormInput
+                  label="Phone Number"
+                  name="phone"
+                  placeholder="+91 98765 43210"
+                  value={form.phone || ""}
+                  onChange={handleChange}
+                  error={errors.phone}
+                  touched={touched.phone}
+                />
+                <label className="inline-flex items-center mt-2 text-sm text-gray-600">
+                  <Checkbox
+                    name="showPhone"
+                    checked={!!form.showPhone}
+                    onCheckedChange={(checked) => {
+                      setForm(prev => ({ ...prev, showPhone: !!checked }));
+                    }}
+                    className="mr-2"
+                  />
+                  Show phone on invoices
+                </label>
+              </div>
+              <FormInput
+                label="Contact Person"
+                name="contact"
+                placeholder="Primary contact person"
+                value={form.contact || ""}
+                onChange={handleChange}
+                error={errors.contact}
+                touched={touched.contact}
+              />
+              
+              {/* Custom Fields */}
+              <div className="md:col-span-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                    <span>Custom Fields</span>
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomField}
+                    className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                  >
+                    <FaPlus className="text-xs" />
+                    Add Field
+                  </Button>
+                </div>
+                {form.customFields && form.customFields.length > 0 && (
+                  <div className="space-y-3">
+                    {form.customFields.map((cf) => (
+                      <Card key={cf.id} className="bg-gray-50/50">
+                        <CardContent className="p-3">
+                          <div className="flex gap-3 items-center">
+                        <Input
+                          type="text"
+                          placeholder="Field name"
+                          value={cf.label}
+                          onChange={e => updateCustomField(cf.id, "label", e.target.value)}
+                          className="flex-1 h-10"
+                        />
+                        <Input
+                          type="text"
+                          placeholder="Field value"
+                          value={cf.value}
+                          onChange={e => updateCustomField(cf.id, "value", e.target.value)}
+                          className="flex-1 h-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeCustomField(cf.id)}
+                          className="text-red-600 hover:bg-red-50 hover:border-red-300"
+                        >
+                          <FaTimes />
+                        </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Attachments Section */}
+          <CollapsibleSection
+            title="Attachments"
+            sectionKey="attachments"
+            isOpen={openSections.attachments}
+            onToggle={toggleSection}
+            icon={<FaEnvelope />}
+          >
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-lg mb-2">📎</div>
+              <p>File attachment feature coming soon</p>
+              <p className="text-sm">Upload contracts, agreements, and other documents</p>
+            </div>
+          </CollapsibleSection>
+
+          {/* Bank Details Section */}
+          <CollapsibleSection
+            title="Banking Information"
+            sectionKey="bank"
+            isOpen={openSections.bank}
+            onToggle={toggleSection}
+            icon={<FaUniversity />}
+          >
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-800">Bank Accounts</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addBankAccount}
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                >
+                  <FaPlus className="text-xs" />
+                  Add Account
+                </Button>
+              </div>
+              {form.bankAccounts && form.bankAccounts.length > 0 && (
+                <div className="space-y-4">
+                  {form.bankAccounts.map((ba) => (
+                    <Card key={ba.id} className="bg-gray-50/50">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Input
+                          type="text"
+                          placeholder="Bank name"
+                          value={ba.bankName}
+                          onChange={e => updateBankAccount(ba.id, "bankName", e.target.value)}
+                          className="h-10"
+                        />
+                        <Input
+                          type="text"
+                          placeholder="Account number"
+                          value={ba.accountNumber}
+                          onChange={e => updateBankAccount(ba.id, "accountNumber", e.target.value)}
+                          className="h-10"
+                        />
+                        <Input
+                          type="text"
+                          placeholder="IFSC code"
+                          value={ba.ifsc}
+                          onChange={e => updateBankAccount(ba.id, "ifsc", e.target.value)}
+                          className="h-10"
+                        />
+                        <Input
+                          type="text"
+                          placeholder="Branch name"
+                          value={ba.branch || ""}
+                          onChange={e => updateBankAccount(ba.id, "branch", e.target.value)}
+                          className="h-10"
+                        />
+                        <Select
+                          value={ba.accountType || ""}
+                          onValueChange={(value) => updateBankAccount(ba.id, "accountType", value)}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Account type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ACCOUNT_TYPES.map((t) => (
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeBankAccount(ba.id)}
+                          className="text-red-600 hover:bg-red-50 hover:border-red-300 h-10"
+                        >
+                          <FaTimes className="mr-2" />
+                          Remove
+                        </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-4 pt-8 border-t border-gray-200">
+            {onCancel && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                className="px-8 py-3 text-sm font-medium hover:bg-gray-50"
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+            )}
+            <Button
+              type="submit"
+              className="px-8 py-3 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              disabled={loading}
+            >
+              {loading && (
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+              )}
+              {submitLabel}
+            </Button>
+          </div>
+        </form>
+    </div>
   );
 }

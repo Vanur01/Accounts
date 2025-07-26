@@ -11,6 +11,7 @@ import AddItemBulkModal from "@/components/AddItemBulkModal";
 import PhaseWisePayment, { PaymentPhase } from "@/components/PhaseWisePayment";
 import type { Cess } from "@/components/ConfigureTax";
 import YourDetailsSection from "@/components/BussinessDetailsSection";
+import { useClientStore } from "@/stores/useClientStore";
 
 export type QuotationFormValues = {
   quotationTitle: string;
@@ -62,8 +63,10 @@ type QuotationFormProps = {
 
 const QuotationForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClients, mockProducts, onSuccess, loading }) => {
   // Use provided mocks or fallback to defaults
-  const clients = mockClients || [];
+  const mockClientsFromProps = mockClients || [];
   const products = mockProducts || [];
+  const addClient = useClientStore((state) => state.addClient);
+  const clients = useClientStore((state) => state.clients);
   // State initialization from initialValues
   const [quotationTitle, setQuotationTitle] = useState(initialValues.quotationTitle);
   const [quotationNumber] = useState(initialValues.quotationNumber);
@@ -299,13 +302,24 @@ const QuotationForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClien
       />
       <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
       <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} onSubmit={form => {
+        // Add client to the store and get the new client back
+        const newClient = addClient({
+          name: form.businessName,
+          gstin: form.gstin,
+          address: form.street,
+          contact: form.alias || form.businessName,
+          email: form.email,
+        });
+        
+        // Update local state with the new client
         setClientDetails({
           name: form.businessName,
           gstin: form.gstin,
           address: form.street,
-          contact: form.phone,
+          contact: form.alias || form.businessName,
           email: form.email,
         });
+        setClientId(String(newClient.id));
         setShowAddClient(false);
       }} />
       <AddItemModal open={showAddItemModal} onClose={() => setShowAddItemModal(false)} onSubmit={item => {
@@ -315,12 +329,12 @@ const QuotationForm: React.FC<any> = ({ initialValues, onSubmit, mode, mockClien
             name: item.name,
             description: item.description,
             qty: 1,
-            rate: item.price,
+            rate: item.sellingPrice || 0,
             discount: 0,
             igst: 0,
             sgst: 0,
             cgst: 0,
-            amount: item.price,
+            amount: item.sellingPrice || 0,
             hsn: "",
             unit: "pcs",
           },

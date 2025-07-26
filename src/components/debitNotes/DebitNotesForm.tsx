@@ -9,6 +9,7 @@ import AddVendorModal from "@/components/AddVendorModal";
 import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";
 import YourDetailsSection from "@/components/BussinessDetailsSection";
+import { useVendorStore } from "@/stores/useVendorStore";
 
 // Types for invoices and reasons
 export type Invoice = {

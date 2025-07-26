@@ -9,6 +9,7 @@ import AddClientModal from "@/components/AddClientModal";
 import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";
 import YourDetailsSection from "@/components/BussinessDetailsSection";
+import { useClientStore } from "@/stores/useClientStore";
 
 // Types for invoices and reasons
 export type Invoice = {
@@ -60,8 +61,10 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
   mockClients,
   mockProducts,
 }) => {
-  const clients = mockClients || [];
+  const mockClientsFromProps = mockClients || [];
   const products = mockProducts || [];
+  const addClient = useClientStore((state) => state.addClient);
+  const clients = useClientStore((state) => state.clients);
   // Header state
   const [creditNoteNo, setCreditNoteNo] = useState(initialValues.creditNoteNo || "");
   const [creditNoteDate, setCreditNoteDate] = useState(initialValues.creditNoteDate || "");
@@ -261,13 +264,24 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
       />
       <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
       <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} onSubmit={form => {
+        // Add client to the store and get the new client back
+        const newClient = addClient({
+          name: form.businessName,
+          gstin: form.gstin,
+          address: form.street,
+          contact: form.alias || form.businessName,
+          email: form.email,
+        });
+        
+        // Update local state with the new client
         setClientDetails({
           name: form.businessName,
           gstin: form.gstin,
           address: form.street,
-          contact: form.phone,
+          contact: form.alias || form.businessName,
           email: form.email,
         });
+        setClientId(String(newClient.id));
         setShowAddClient(false);
       }} />
       <AddItemModal open={showAddItemModal} onClose={() => setShowAddItemModal(false)} onSubmit={item => {

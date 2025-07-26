@@ -11,6 +11,7 @@ import AddItemBulkModal from "@/components/AddItemBulkModal";
 import type { Cess } from "@/components/ConfigureTax";
 import YourDetailsSection from "@/components/BussinessDetailsSection";
 import { DeliveryChallanFormValues } from "@/stores/useDeliveryChallanStore";
+import { useClientStore } from "@/stores/useClientStore";
 
 export type DeliveryChallanFormProps = {
   initialValues: DeliveryChallanFormValues;
@@ -23,8 +24,10 @@ export type DeliveryChallanFormProps = {
 };
 
 const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({ initialValues, onSubmit, mode, onSuccess, loading, mockClients, mockProducts }) => {
-  const clients = mockClients || [];
+  const mockClientsFromProps = mockClients || [];
   const products = mockProducts || [];
+  const addClient = useClientStore((state) => state.addClient);
+  const clients = useClientStore((state) => state.clients);
   // State initialization from initialValues
   const [challanNumber, setChallanNumber] = useState(initialValues.quotationNumber || "");
   const [reference, setReference] = useState(initialValues.notes || "");
@@ -244,13 +247,24 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({ initialValues
       />
       <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
       <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} onSubmit={form => {
+        // Add client to the store and get the new client back
+        const newClient = addClient({
+          name: form.businessName,
+          gstin: form.gstin,
+          address: form.street,
+          contact: form.alias || form.businessName,
+          email: form.email,
+        });
+        
+        // Update local state with the new client
         setClientDetails({
           name: form.businessName,
           gstin: form.gstin,
           address: form.street,
-          contact: form.phone,
+          contact: form.alias || form.businessName,
           email: form.email,
         });
+        setClientId(String(newClient.id));
         setShowAddClient(false);
       }} />
       <AddItemModal open={showAddItemModal} onClose={() => setShowAddItemModal(false)} onSubmit={item => {

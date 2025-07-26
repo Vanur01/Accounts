@@ -6,6 +6,7 @@ import InvoiceForm, { InvoiceFormValues } from "@/components/invoice/InvoiceForm
 import { useClientStore } from "@/stores/useClientStore";
 import { useItemStore } from "@/stores/useItemStore";
 import { useInvoiceStore } from "@/stores/useinvoiceStore";
+import { useBussinessStore } from "@/stores/useBussinessStore";
 import { useRouter } from "next/navigation"
 
 const generateInvoiceNumber = () => {
@@ -13,6 +14,28 @@ const generateInvoiceNumber = () => {
   const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random
   return `INV-${datePart}-${randomPart}`;
 };
+
+export default function CreateInvoicePage() {
+  const router = useRouter();
+  const { clients } = useClientStore();
+  const { items } = useItemStore();
+  const { details } = useBussinessStore();
+  const [loading, setLoading] = useState(false);
+  const createInvoice = useInvoiceStore((state) => state.createInvoice);
+
+  const businessStoreDetails = details;
+
+  if (!businessStoreDetails) {
+    return <div>Loading business details...</div>;
+  }
+
+  const mappedBusinessDetails = {
+    name: businessStoreDetails.businessName,
+    gstin: businessStoreDetails.gstNumber || "",
+    address: businessStoreDetails.website || "",
+    contact: businessStoreDetails.phone,
+    email: "",
+  };
 
 const defaultInitialValues: InvoiceFormValues = {
   type: "performa",
@@ -28,6 +51,7 @@ const defaultInitialValues: InvoiceFormValues = {
     contact: "",
     email: "",
   },
+  businessDetails: mappedBusinessDetails,
   taxType: "IGST",
   cessList: [],
   items: [
@@ -55,6 +79,7 @@ const defaultInitialValues: InvoiceFormValues = {
   notes: "",
   attachments: [],
   showSignature: false,
+  phases: [],
 };
 
 export default function CreateInvoicePage() {

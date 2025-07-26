@@ -7,8 +7,10 @@ import SummaryCard from "../SummaryCard";
 import AdditionalInputs from "../AdditionalInputs";
 import AddItemModal from "@/components/AddItemModal";
 import AddItemBulkModal from "@/components/AddItemBulkModal";
+import AddVendorModal from "@/components/AddVendorModal";
 import YourDetailsSection from "@/components/BussinessDetailsSection";
 import type { Vendor } from "@/stores/useVendorStore";
+import { useVendorStore } from "@/stores/useVendorStore";
 
 export type PurchaseOrderFormValues = {
   purchaseOrderNo: string;
@@ -51,6 +53,9 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   mockProducts,
 }) => {
   const products = mockProducts || [];
+  const vendors = useVendorStore((state) => state.vendors);
+  // Use vendors from store if available, otherwise fallback to mockVendors
+  const availableVendors = vendors.length > 0 ? vendors : mockVendors;
   // Header state
   const [purchaseOrderNo, setPurchaseOrderNo] = useState(initialValues.purchaseOrderNo || "");
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState(initialValues.supplierInvoiceNo || "");
@@ -59,7 +64,13 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   // Vendor state
   const [vendorId, setVendorId] = useState(initialValues.vendorId);
   const [showAddVendor, setShowAddVendor] = useState(false);
-  const [vendorDetails, setVendorDetails] = useState(initialValues.vendorDetails);
+  const [vendorDetails, setVendorDetails] = useState(initialValues.vendorDetails || {
+    name: "",
+    gstin: "",
+    address: "",
+    contact: "",
+    email: "",
+  });
   // Business state
   const [businessDetails] = useState(initialValues.businessDetails);
   // Items and other states
@@ -114,7 +125,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   const handleVendorSelect = (value: string) => {
     setVendorId(value);
     if (value === "new") return;
-    const found = mockVendors.find((v: any) => String(v.id) === value);
+    const found = availableVendors.find((v: any) => String(v.id) === value);
     if (found) {
       setVendorDetails({
         name: found.name,
@@ -201,7 +212,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
             vendorDetails={vendorDetails}
             setVendorDetails={setVendorDetails}
             handleAddVendor={() => setShowAddVendor(true)}
-            mockVendors={mockVendors}
+            mockVendors={availableVendors}
           />
         </div>
       </div>
@@ -281,6 +292,23 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         ]);
         setShowAddItemBulkModal(false);
       }} />
+      <AddVendorModal 
+        open={showAddVendor} 
+        onOpenChange={setShowAddVendor}
+        onSuccess={() => {
+          // Close the modal
+          setShowAddVendor(false);
+          // Reset vendor selection to allow user to select the newly created vendor
+          setVendorId("");
+          setVendorDetails({
+            name: "",
+            gstin: "",
+            address: "",
+            contact: "",
+            email: "",
+          });
+        }}
+      />
     </div>
   );
 };

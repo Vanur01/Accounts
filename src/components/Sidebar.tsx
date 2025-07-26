@@ -73,9 +73,9 @@ const sidebarRoutes: SidebarSectionType[] = [
     basePath: "/dashboard",
     children: [
       { label: "Clients", href: "/dashboard/clients" },
-      { label: "Invoices", href: "/dashboard/invoices" },
       { label: "Quotations", href: "/dashboard/quotations" },
       { label: "Performa Invoices", href: "/dashboard/performa-invoices" },
+      { label: "Invoices", href: "/dashboard/invoices" },
       { label: "Sales Orders", href: "/dashboard/sales-orders" },
       { label: "Payment Received", href: "/dashboard/payment-received" },
       { label: "Delivery Challans", href: "/dashboard/delivery-challans" },
@@ -101,6 +101,16 @@ const sidebarRoutes: SidebarSectionType[] = [
     children: [
       { label: "Category", href: "/dashboard/inventory/category" },
       { label: "Items", href: "/dashboard/inventory/items" },
+    ],
+  },
+  {
+    label: "Reports",
+    icon: FiFileText,
+    basePath: "/dashboard",
+    children: [
+      { label: "All Reports", href: "/dashboard/reports" },
+      { label: "GSTR1", href: "/dashboard/reports/gstr1summary" },
+      { label: "GSTR2", href: "/dashboard/reports/gstr2summary" },
     ],
   },
 ];
@@ -301,18 +311,26 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobileOpen, 
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 overflow-y-auto">
-            <div className="space-y-1">
-              {sidebarRoutes.map((section: SidebarSectionType) => (
-                <SidebarSection
-                  key={section.label}
-                  section={section}
-                  collapsed={collapsed}
-                  expanded={expanded}
-                  setExpanded={setExpanded}
-                  pathname={pathname}
-                  setMobileOpen={setMobileOpen}
-                />
-              ))}
+            <div>
+              {sidebarRoutes.map((section: SidebarSectionType, idx) => {
+                // Add extra margin above 'Reports' and after each main section
+                const isReports = section.label === "Reports";
+                return (
+                  <div
+                    key={section.label}
+                    className="mt-2 mb-1"
+                  >
+                    <SidebarSection
+                      section={section}
+                      collapsed={collapsed}
+                      expanded={expanded}
+                      setExpanded={setExpanded}
+                      pathname={pathname}
+                      setMobileOpen={setMobileOpen}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </nav>
 

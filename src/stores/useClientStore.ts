@@ -12,7 +12,7 @@ export type Client = {
 
 interface ClientStore {
   clients: Client[];
-  addClient: (client: Omit<Client, 'id'>) => void;
+  addClient: (client: Omit<Client, 'id'>) => Client;
   updateClient: (id: number, updated: Partial<Client>) => void;
 }
 
@@ -21,16 +21,15 @@ export const useClientStore = create<ClientStore>()(
     (set, get) => ({
       clients: [],
       addClient: (client) => {
+        const newClient = {
+          ...client,
+          id: get().clients.length ? get().clients[get().clients.length - 1].id + 1 : 1,
+        };
         set((state) => ({
-          clients: [
-            ...state.clients,
-            {
-              ...client,
-              id: state.clients.length ? state.clients[state.clients.length - 1].id + 1 : 1,
-            },
-          ],
-        }))
-      console.log(get().clients)
+          clients: [...state.clients, newClient],
+        }));
+        console.log(get().clients);
+        return newClient;
       },
       updateClient: (id, updated) => {
         set((state) => ({
