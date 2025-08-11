@@ -34,7 +34,7 @@ const HeroPage = () => {
           Empower your team with a comprehensive CRM and inventory management platform. Simplify workflows, enhance productivity, and drive growth.
         </p>
         <div className="flex justify-center gap-4">
-          <Link href="/register" passHref>
+          <Link href="/dashbaord" passHref>
             <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 shadow-md transition-all rounded-lg flex items-center justify-center">
               Start Free Trial
             </button>

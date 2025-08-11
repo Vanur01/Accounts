@@ -41,12 +41,11 @@ const Navigation = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
+            <Link href="/dashboard">
             <Button variant="default" size="sm">
               Start Free Trial
             </Button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
