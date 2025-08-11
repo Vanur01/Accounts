@@ -82,13 +82,6 @@ const defaultInitialValues: InvoiceFormValues = {
   phases: [],
 };
 
-export default function CreateInvoicePage() {
-  const router = useRouter();
-  const { clients } = useClientStore();
-  const { items } = useItemStore();
-  const [loading, setLoading] = useState(false);
-  const createInvoice = useInvoiceStore((state) => state.createInvoice);
-
   const handleCreate = async (values: InvoiceFormValues) => {
     setLoading(true);
     try {

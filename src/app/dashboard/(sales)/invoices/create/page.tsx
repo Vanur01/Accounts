@@ -108,13 +108,13 @@ export default function CreateInvoicePage() {
     roundOff: false,
     showHSN: false,
     showUnit: false,
+    phases: [],
     terms: "",
     notes: "",
     attachments: [],
     showSignature: false,
   };
 
-  console.log(defaultInitialValues)
 
 
   const handleCreate = async (values: InvoiceFormValues) => {

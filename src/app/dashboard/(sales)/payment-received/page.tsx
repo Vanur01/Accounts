@@ -3,10 +3,12 @@ import React from "react";
 import { usePaymentReceivedStore } from "@/stores/usePaymentReceivedStore";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useVendorStore } from "@/stores/useVendorStore";
 
 export default function PaymentReceivedListPage() {
   const payments = usePaymentReceivedStore((state) => state.payments);
   const removePayment = usePaymentReceivedStore((state) => state.removePayment);
+  const vendors = useVendorStore((state) => state.vendors);
 
   return (
     <div className="max-w-5xl mx-auto rounded-lg shadow p-4 sm:p-8 bg-[var(--color-card)]">
@@ -39,9 +41,12 @@ export default function PaymentReceivedListPage() {
               payments.map((payment) => (
                 <tr key={payment.id} className="transition hover:bg-[var(--color-muted)]/40 focus-within:bg-[var(--color-muted)]/60">
                   <td className="px-6 py-4 whitespace-nowrap font-mono text-[var(--color-card-foreground)]">{payment.paymentNo || payment.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-[var(--color-card-foreground)]">{payment.clientId}</td>
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-[var(--color-card-foreground)]">{payment.clientId}</td> */}
+                  <td className="px-6 py-4 whitespace-nowrap text-[var(--color-card-foreground)]">
+                    {vendors.find(v => String(v.id) === String(payment.vendorId))?.name || payment.vendorId}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-[var(--color-card-foreground)]">{payment.paymentDate}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-[var(--color-card-foreground)]">{payment.amountReceived}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-[var(--color-card-foreground)]">{payment.amountPaid}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <Link href={`/dashboard/payment-received/edit/${payment.id}`} className="px-3 py-2 rounded hover:bg-[var(--color-muted)] text-[var(--color-primary)] text-sm mr-2">Edit</Link>
                     <Button variant="destructive" size="sm" onClick={() => removePayment(payment.id)}>Delete</Button>

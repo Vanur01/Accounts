@@ -15,8 +15,9 @@ import {
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import SubcategoryModal from "@/components/SubcategoryModal";
+import { Suspense } from "react";
 
-export default function SubcategoriesPage() {
+function SubcategoriesPageContent() {
   const searchParams = useSearchParams();
   const categoryId = Number(searchParams.get("categoryId"));
   const { categories } = useCategoryStore();
@@ -153,5 +154,13 @@ export default function SubcategoriesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function SubcategoriesPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SubcategoriesPageContent />
+    </Suspense>
   );
 }

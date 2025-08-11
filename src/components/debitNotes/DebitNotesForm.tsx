@@ -261,16 +261,14 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
         setShowSignature={setShowSignature}
       />
       <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
-      <AddVendorModal open={showAddVendor} onClose={() => setShowAddVendor(false)} onSubmit={form => {
-        setVendorDetails({
-          name: form.businessName,
-          gstin: form.gstin,
-          address: form.street,
-          contact: form.phone,
-          email: form.email,
-        });
-        setShowAddVendor(false);
-      }} />
+      <AddVendorModal 
+        open={showAddVendor} 
+        onOpenChange={setShowAddVendor}
+        onSuccess={() => {
+          // Optionally, you may want to refresh vendor list or set vendor details here if needed
+          setShowAddVendor(false);
+        }}
+      />
       <AddItemModal open={showAddItemModal} onClose={() => setShowAddItemModal(false)} onSubmit={item => {
         setItems((prev: any) => [
           ...prev,

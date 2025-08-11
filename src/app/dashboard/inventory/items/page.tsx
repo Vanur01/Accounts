@@ -14,8 +14,9 @@ import { FileText, FilePlus2, ShoppingCart } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function AllItemsPage() {
+function AllItemsPageContent() {
   const allItems = useItemStore((state) => state.items);
   const { categories } = useCategoryStore();
   const { subcategories } = useSubcategoryStore();
@@ -395,5 +396,13 @@ export default function AllItemsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AllItemsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AllItemsPageContent />
+    </Suspense>
   );
 }

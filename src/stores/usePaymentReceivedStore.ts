@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { PaymentReceivedFormValues } from "@/components/paymentReceived/PaymentReivedForm";
+import {PaymentsMadeFormValues} from "@/components/paymentReceived/PaymentReivedForm";
 
-export type PaymentReceived = PaymentReceivedFormValues & { id: string };
+export type PaymentReceived = PaymentsMadeFormValues & { id: string };
 
 interface PaymentReceivedStore {
   payments: PaymentReceived[];

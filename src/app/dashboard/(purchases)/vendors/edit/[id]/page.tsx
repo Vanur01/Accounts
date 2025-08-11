@@ -43,8 +43,8 @@ export default function EditVendorPage() {
     phone: vendor.phone || "",
     showPhone: vendor.showPhone || false,
     address: vendor.address || "",
-    customFields: vendor.customFields ? [...vendor.customFields] : [],
-    bankAccounts: vendor.bankAccounts ? [...vendor.bankAccounts] : [],
+    // customFields: vendor.customFields ? [...vendor.customFields] : [],
+    // bankAccounts: vendor.bankAccounts ? [...vendor.bankAccounts] : [],
     attachments: vendor.attachments ? [...vendor.attachments] : [],
   };
 

@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, PlayCircle } from "lucide-react";
 import heroDashboard from "@/assets/hero-dashboard.jpg";
+import Image from "next/image";
+import Link from "next/link";
 
 const HeroSection = () => {
   return (
@@ -31,14 +33,12 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="hero" size="xl" className="group">
+              <Link href="/dashboard">
+              <Button variant="default"  className="group">
                 Start Free Trial
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button variant="outline" size="xl" className="group">
-                <PlayCircle className="mr-2 h-5 w-5" />
-                Watch Demo
-              </Button>
+              </Link>
             </div>
 
             {/* Social Proof */}
@@ -62,7 +62,7 @@ const HeroSection = () => {
           <div className="relative animate-slide-in-left lg:animate-fade-in-up">
             <div className="relative">
               {/* Main Dashboard Image */}
-              <img
+              <Image
                 src={heroDashboard}
                 alt="AccountFlow Dashboard"
                 className="w-full h-auto rounded-2xl shadow-strong"

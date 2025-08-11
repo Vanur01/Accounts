@@ -73,14 +73,9 @@ const Navigation = () => {
                 </a>
               ))}
               <div className="pt-4 space-y-2">
-                <Link href="/login">  
-                <Button variant="ghost" size="sm" className="w-full">
-                  Sign In
-                </Button>
-                </Link>
-                <Link href="/register">
+                <Link href="/dashboard">
                   <Button variant="default" size="sm" className="w-full">
-                    Start Free Trial
+                    Dashboard
                   </Button>
                 </Link>
               </div>

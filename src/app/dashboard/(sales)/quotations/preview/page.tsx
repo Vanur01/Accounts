@@ -5,7 +5,7 @@ import { PDFViewer, Page, Text, View, Document, StyleSheet, Font, PDFDownloadLin
 import { Button } from "@/components/ui/button";
 import PremiumTemplate, { QuotationType, PhaseType } from "@/components/PremiumTemplate";
 import ClassicTemplate from "@/components/ClassicTemplate";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Mock data (same as before)
 const quotation = {
@@ -224,6 +224,12 @@ const templates = [
 
 export default function QuotationPreviewPage() {
   const [selectedTemplate, setSelectedTemplate] = useState("classic");
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const getDoc = () =>
     selectedTemplate === "premium"
       ? <PremiumTemplate quotation={quotation} phases={phases} />
@@ -242,20 +248,24 @@ export default function QuotationPreviewPage() {
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
-        <PDFDownloadLink
-          key={selectedTemplate}
-          document={getDoc()}
-          fileName={`quotation-${quotation.number}.pdf`}
-        >
-          {({ loading }) => (
-            <Button>{loading ? "Preparing PDF..." : "Download PDF"}</Button>
-          )}
-        </PDFDownloadLink>
+        {isClient && (
+          <PDFDownloadLink
+            key={selectedTemplate}
+            document={getDoc()}
+            fileName={`quotation-${quotation.number}.pdf`}
+          >
+            {({ loading }) => (
+              <Button>{loading ? "Preparing PDF..." : "Download PDF"}</Button>
+            )}
+          </PDFDownloadLink>
+        )}
       </div>
       <div className="border rounded shadow overflow-hidden" style={{ height: 900 }}>
-        <PDFViewer key={selectedTemplate} width="100%" height={900} showToolbar>
-          {getDoc()}
-        </PDFViewer>
+        {isClient && (
+          <PDFViewer key={selectedTemplate} width="100%" height={900} showToolbar>
+            {getDoc()}
+          </PDFViewer>
+        )}
       </div>
       
     </div>
