@@ -42,7 +42,7 @@ const AccountingHero = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 relative overflow-hidden mt-16">
       {/* Subtle Background Elements */}
       <div className="absolute inset-0">
         <div className="absolute top-0 right-0 w-96 h-96 bg-slate-100 rounded-full opacity-40 transform translate-x-48 -translate-y-48"></div>
@@ -52,29 +52,6 @@ const AccountingHero = () => {
       {/* Subtle Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
-      {/* Navigation */}
-      <motion.nav 
-        className="relative z-50 flex justify-between items-center px-6 lg:px-12 py-6 bg-white/80 backdrop-blur-sm border-b border-gray-200/50"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center">
-            <Calculator className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-slate-900">FinanceFlow</span>
-        </div>
-        
-        <div className="hidden md:flex items-center space-x-8">
-          <a href="#features" className="text-gray-600 hover:text-slate-900 transition-colors font-medium">Features</a>
-          <a href="#pricing" className="text-gray-600 hover:text-slate-900 transition-colors font-medium">Pricing</a>
-          <a href="#about" className="text-gray-600 hover:text-slate-900 transition-colors font-medium">About</a>
-          <Link href="/dashboard" className="bg-violet-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-violet-700 transition-colors">
-            Sign In
-          </Link>
-        </div>
-      </motion.nav>
 
       {/* Main Hero Content */}
       <div className="relative z-40 max-w-7xl mx-auto px-6 lg:px-12 pt-20 pb-24">
